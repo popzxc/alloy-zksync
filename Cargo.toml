@@ -6,3 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+alloy-primitives = { version = "0.7.6", features = ["std", "k256", "serde"] }
+k256 = "0.13.3"
+rand = "0.8.5"
+thiserror = "1.0.61"
+tracing = "0.1.40"
+url = "2.5.2"

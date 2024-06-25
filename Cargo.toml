@@ -6,9 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+alloy-consensus = "0.1.2"
+alloy-network = "0.1.2"
 alloy-primitives = { version = "0.7.6", features = ["std", "k256", "serde"] }
+alloy-rpc-types-eth = "0.1.2"
+async-trait = "0.1.80"
+futures-utils-wasm = "0.1.0"
 k256 = "0.13.3"
 rand = "0.8.5"
+serde = "1.0.203"
 thiserror = "1.0.61"
 tracing = "0.1.40"
 url = "2.5.2"

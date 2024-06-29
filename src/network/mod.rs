@@ -12,12 +12,12 @@ mod tx_type;
 mod unsigned_tx;
 
 #[derive(Debug, Clone, Copy)]
-pub struct EraNetwork {
+pub struct Era {
     _private: (),
 }
 
-impl Network for EraNetwork {
-    type TxType = <Ethereum as Network>::TxType;
+impl Network for Era {
+    type TxType = self::tx_type::TxType;
 
     type TxEnvelope = self::tx_envelope::TxEnvelope;
 

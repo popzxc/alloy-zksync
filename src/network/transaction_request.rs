@@ -1,6 +1,8 @@
-use alloy_network::{Network, TransactionBuilderError};
+use alloy_network::{
+    Network, TransactionBuilder, TransactionBuilderError, UnbuiltTransactionError,
+};
 
-use super::EraNetwork;
+use super::Era;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,149 +35,176 @@ impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
     }
 }
 
-impl alloy_network::TransactionBuilder<EraNetwork> for TransactionRequest {
+impl TransactionBuilder<Era> for TransactionRequest {
     fn chain_id(&self) -> Option<alloy_primitives::ChainId> {
-        todo!()
+        self.inner.chain_id
     }
 
     fn set_chain_id(&mut self, chain_id: alloy_primitives::ChainId) {
-        todo!()
+        self.inner.set_chain_id(chain_id)
     }
 
     fn nonce(&self) -> Option<u64> {
-        todo!()
+        TransactionBuilder::nonce(&self.inner)
     }
 
     fn set_nonce(&mut self, nonce: u64) {
-        todo!()
+        self.inner.set_nonce(nonce)
     }
 
     fn input(&self) -> Option<&alloy_primitives::Bytes> {
-        todo!()
+        TransactionBuilder::input(&self.inner)
     }
 
     fn set_input<T: Into<alloy_primitives::Bytes>>(&mut self, input: T) {
-        todo!()
+        self.inner.set_input(input)
     }
 
     fn from(&self) -> Option<alloy_primitives::Address> {
-        todo!()
+        TransactionBuilder::from(&self.inner)
     }
 
     fn set_from(&mut self, from: alloy_primitives::Address) {
-        todo!()
+        self.inner.set_from(from)
     }
 
     fn kind(&self) -> Option<alloy_primitives::TxKind> {
-        todo!()
+        self.inner.kind()
     }
 
     fn clear_kind(&mut self) {
-        todo!()
+        self.inner.clear_kind()
     }
 
     fn set_kind(&mut self, kind: alloy_primitives::TxKind) {
-        todo!()
+        self.inner.set_kind(kind)
     }
 
     fn value(&self) -> Option<alloy_primitives::U256> {
-        todo!()
+        TransactionBuilder::value(&self.inner)
     }
 
     fn set_value(&mut self, value: alloy_primitives::U256) {
-        todo!()
+        self.inner.set_value(value)
     }
 
     fn gas_price(&self) -> Option<u128> {
-        todo!()
+        self.inner.gas_price()
     }
 
     fn set_gas_price(&mut self, gas_price: u128) {
-        todo!()
+        self.inner.set_gas_price(gas_price)
     }
 
     fn max_fee_per_gas(&self) -> Option<u128> {
-        todo!()
+        self.inner.max_fee_per_gas
     }
 
     fn set_max_fee_per_gas(&mut self, max_fee_per_gas: u128) {
-        todo!()
+        self.inner.set_max_fee_per_gas(max_fee_per_gas)
     }
 
     fn max_priority_fee_per_gas(&self) -> Option<u128> {
-        todo!()
+        TransactionBuilder::max_priority_fee_per_gas(&self.inner)
     }
 
     fn set_max_priority_fee_per_gas(&mut self, max_priority_fee_per_gas: u128) {
-        todo!()
+        self.inner
+            .set_max_priority_fee_per_gas(max_priority_fee_per_gas)
     }
 
     fn max_fee_per_blob_gas(&self) -> Option<u128> {
-        todo!()
+        self.inner.max_fee_per_blob_gas()
     }
 
     fn set_max_fee_per_blob_gas(&mut self, max_fee_per_blob_gas: u128) {
-        todo!()
+        self.inner.set_max_fee_per_blob_gas(max_fee_per_blob_gas)
     }
 
     fn gas_limit(&self) -> Option<u128> {
-        todo!()
+        TransactionBuilder::gas_limit(&self.inner)
     }
 
     fn set_gas_limit(&mut self, gas_limit: u128) {
-        todo!()
+        self.inner.set_gas_limit(gas_limit)
     }
 
     fn access_list(&self) -> Option<&alloy_rpc_types_eth::AccessList> {
-        todo!()
+        TransactionBuilder::access_list(&self.inner)
     }
 
     fn set_access_list(&mut self, access_list: alloy_rpc_types_eth::AccessList) {
-        todo!()
+        self.inner.set_access_list(access_list)
     }
 
     fn blob_sidecar(&self) -> Option<&alloy_rpc_types_eth::BlobTransactionSidecar> {
-        todo!()
+        TransactionBuilder::blob_sidecar(&self.inner)
     }
 
     fn set_blob_sidecar(&mut self, sidecar: alloy_rpc_types_eth::BlobTransactionSidecar) {
-        todo!()
+        self.inner.set_blob_sidecar(sidecar)
     }
 
-    fn complete_type(&self, ty: <EraNetwork as Network>::TxType) -> Result<(), Vec<&'static str>> {
-        todo!()
+    fn complete_type(&self, ty: <Era as Network>::TxType) -> Result<(), Vec<&'static str>> {
+        // TODO: cover era-specific types.
+        let eth_ty = ty
+            .as_eth_type()
+            .expect("Era-specific types are not supported yet");
+        TransactionBuilder::complete_type(&self.inner, eth_ty)
     }
 
     fn can_submit(&self) -> bool {
-        todo!()
+        TransactionBuilder::can_submit(&self.inner)
     }
 
     fn can_build(&self) -> bool {
-        todo!()
+        TransactionBuilder::can_build(&self.inner)
     }
 
-    fn output_tx_type(&self) -> <EraNetwork as Network>::TxType {
-        todo!()
+    fn output_tx_type(&self) -> <Era as Network>::TxType {
+        TransactionBuilder::output_tx_type(&self.inner).into()
     }
 
-    fn output_tx_type_checked(&self) -> Option<<EraNetwork as Network>::TxType> {
-        todo!()
+    fn output_tx_type_checked(&self) -> Option<<Era as Network>::TxType> {
+        TransactionBuilder::output_tx_type_checked(&self.inner).map(Into::into)
     }
 
     fn prep_for_submission(&mut self) {
-        todo!()
+        TransactionBuilder::prep_for_submission(&mut self.inner)
     }
 
     fn build_unsigned(
         self,
-    ) -> alloy_network::BuildResult<<EraNetwork as Network>::UnsignedTx, EraNetwork> {
-        todo!()
+    ) -> alloy_network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Era> {
+        use TransactionBuilderError::*;
+
+        let result = TransactionBuilder::build_unsigned(self.inner);
+        match result {
+            Ok(tx) => Ok(crate::network::unsigned_tx::TypedTransaction { inner: tx }),
+            Err(err) => {
+                let UnbuiltTransactionError { request, error } = err;
+                let wrapped_request = Self { inner: request };
+                let error = match error {
+                    InvalidTransactionRequest(tx, fields) => {
+                        InvalidTransactionRequest(tx.into(), fields)
+                    }
+                    UnsupportedSignatureType => UnsupportedSignatureType,
+                    Signer(s) => Signer(s),
+                    Custom(c) => Custom(c),
+                };
+
+                Err(UnbuiltTransactionError {
+                    request: wrapped_request,
+                    error,
+                })
+            }
+        }
     }
 
-    async fn build<W: alloy_network::NetworkWallet<EraNetwork>>(
+    async fn build<W: alloy_network::NetworkWallet<Era>>(
         self,
         wallet: &W,
-    ) -> Result<<EraNetwork as Network>::TxEnvelope, TransactionBuilderError<EraNetwork>> {
-        todo!()
+    ) -> Result<<Era as Network>::TxEnvelope, TransactionBuilderError<Era>> {
+        Ok(wallet.sign_request(self).await?)
     }
 }

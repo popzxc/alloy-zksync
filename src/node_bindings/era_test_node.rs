@@ -368,7 +368,7 @@ impl EraTestNode {
                 break;
             }
 
-            if line.find("Private key: ").is_some() {
+            if line.find("Private Key: ").is_some() {
                 // Questionable but OK.
                 let key_str = line
                     .split("0x")

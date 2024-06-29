@@ -1,15 +1,15 @@
 use alloy_network::Ethereum;
 use alloy_network::Network;
 
-mod header;
-mod header_response;
-mod receipt_envelope;
-mod receipt_response;
-mod transaction_request;
-mod transaction_response;
-mod tx_envelope;
-mod tx_type;
-mod unsigned_tx;
+pub mod header;
+pub mod header_response;
+pub mod receipt_envelope;
+pub mod receipt_response;
+pub mod transaction_request;
+pub mod transaction_response;
+pub mod tx_envelope;
+pub mod tx_type;
+pub mod unsigned_tx;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Era {

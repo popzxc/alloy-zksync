@@ -37,7 +37,11 @@ impl<T: NetworkWallet<Ethereum> + Clone> NetworkWallet<Zksync> for EraWallet<T> 
         sender: Address,
         tx: crate::network::unsigned_tx::TypedTransaction,
     ) -> alloy_signer::Result<crate::network::tx_envelope::TxEnvelope> {
-        let signed = self.inner.sign_transaction_from(sender, tx.inner).await?;
-        Ok(crate::network::tx_envelope::TxEnvelope { inner: signed })
+        match tx {
+            crate::network::unsigned_tx::TypedTransaction::Native(inner) => {
+                let signed = self.inner.sign_transaction_from(sender, inner).await?;
+                Ok(crate::network::tx_envelope::TxEnvelope::Native(signed))
+            }
+        }
     }
 }

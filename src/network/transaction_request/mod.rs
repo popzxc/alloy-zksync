@@ -4,6 +4,8 @@ use alloy_network::{
 
 use super::Zksync;
 
+pub mod eip712;
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 pub enum TransactionRequest {
@@ -22,183 +24,140 @@ struct Eip712Meta {
     _todo: (),
 }
 
+/// Macro that delegates a method call to the inner variant implementation.
+macro_rules! delegate {
+    ($_self:ident.$method:ident($($args:expr),*)) => {
+        match $_self {
+            Self::Native(inner) => TransactionBuilder::$method(inner, $($args),*),
+        }
+    };
+}
+
 impl From<crate::network::unsigned_tx::TypedTransaction> for TransactionRequest {
     fn from(value: crate::network::unsigned_tx::TypedTransaction) -> Self {
-        Self::Native(From::from(value.inner))
+        match value {
+            crate::network::unsigned_tx::TypedTransaction::Native(inner) => {
+                Self::Native(inner.into())
+            }
+        }
     }
 }
 
 impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
     fn from(value: crate::network::tx_envelope::TxEnvelope) -> Self {
-        Self::Native(From::from(value.inner))
+        match value {
+            crate::network::tx_envelope::TxEnvelope::Native(inner) => Self::Native(inner.into()),
+        }
     }
 }
 
 impl TransactionBuilder<Zksync> for TransactionRequest {
     fn chain_id(&self) -> Option<alloy_primitives::ChainId> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::chain_id(inner),
-        }
+        delegate!(self.chain_id())
     }
 
     fn set_chain_id(&mut self, chain_id: alloy_primitives::ChainId) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_chain_id(inner, chain_id),
-        }
+        delegate!(self.set_chain_id(chain_id))
     }
 
     fn nonce(&self) -> Option<u64> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::nonce(inner),
-        }
+        delegate!(self.nonce())
     }
 
     fn set_nonce(&mut self, nonce: u64) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_nonce(inner, nonce),
-        }
+        delegate!(self.set_nonce(nonce))
     }
 
     fn input(&self) -> Option<&alloy_primitives::Bytes> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::input(inner),
-        }
+        delegate!(self.input())
     }
 
     fn set_input<T: Into<alloy_primitives::Bytes>>(&mut self, input: T) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_input(inner, input),
-        }
+        delegate!(self.set_input(input.into()))
     }
 
     fn from(&self) -> Option<alloy_primitives::Address> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::from(inner),
-        }
+        delegate!(self.from())
     }
 
     fn set_from(&mut self, from: alloy_primitives::Address) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_from(inner, from),
-        }
+        delegate!(self.set_from(from))
     }
 
     fn kind(&self) -> Option<alloy_primitives::TxKind> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::kind(inner),
-        }
+        delegate!(self.kind())
     }
 
     fn clear_kind(&mut self) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::clear_kind(inner),
-        }
+        delegate!(self.clear_kind())
     }
 
     fn set_kind(&mut self, kind: alloy_primitives::TxKind) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_kind(inner, kind),
-        }
+        delegate!(self.set_kind(kind))
     }
 
     fn value(&self) -> Option<alloy_primitives::U256> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::value(inner),
-        }
+        delegate!(self.value())
     }
 
     fn set_value(&mut self, value: alloy_primitives::U256) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_value(inner, value),
-        }
+        delegate!(self.set_value(value))
     }
 
     fn gas_price(&self) -> Option<u128> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::gas_price(inner),
-        }
+        delegate!(self.gas_price())
     }
 
     fn set_gas_price(&mut self, gas_price: u128) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_gas_price(inner, gas_price),
-        }
+        delegate!(self.set_gas_price(gas_price))
     }
 
     fn max_fee_per_gas(&self) -> Option<u128> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::max_fee_per_gas(inner),
-        }
+        delegate!(self.max_fee_per_gas())
     }
 
     fn set_max_fee_per_gas(&mut self, max_fee_per_gas: u128) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_max_fee_per_gas(inner, max_fee_per_gas),
-        }
+        delegate!(self.set_max_fee_per_gas(max_fee_per_gas))
     }
 
     fn max_priority_fee_per_gas(&self) -> Option<u128> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::max_priority_fee_per_gas(inner),
-        }
+        delegate!(self.max_priority_fee_per_gas())
     }
 
     fn set_max_priority_fee_per_gas(&mut self, max_priority_fee_per_gas: u128) {
-        match self {
-            Self::Native(inner) => {
-                TransactionBuilder::set_max_priority_fee_per_gas(inner, max_priority_fee_per_gas)
-            }
-        }
+        delegate!(self.set_max_priority_fee_per_gas(max_priority_fee_per_gas))
     }
 
     fn max_fee_per_blob_gas(&self) -> Option<u128> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::max_fee_per_blob_gas(inner),
-        }
+        delegate!(self.max_fee_per_blob_gas())
     }
 
     fn set_max_fee_per_blob_gas(&mut self, max_fee_per_blob_gas: u128) {
-        match self {
-            Self::Native(inner) => {
-                TransactionBuilder::set_max_fee_per_blob_gas(inner, max_fee_per_blob_gas)
-            }
-        }
+        delegate!(self.set_max_fee_per_blob_gas(max_fee_per_blob_gas))
     }
 
     fn gas_limit(&self) -> Option<u128> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::gas_limit(inner),
-        }
+        delegate!(self.gas_limit())
     }
 
     fn set_gas_limit(&mut self, gas_limit: u128) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_gas_limit(inner, gas_limit),
-        }
+        delegate!(self.set_gas_limit(gas_limit))
     }
 
     fn access_list(&self) -> Option<&alloy_rpc_types_eth::AccessList> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::access_list(inner),
-        }
+        delegate!(self.access_list())
     }
 
     fn set_access_list(&mut self, access_list: alloy_rpc_types_eth::AccessList) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_access_list(inner, access_list),
-        }
+        delegate!(self.set_access_list(access_list))
     }
 
     fn blob_sidecar(&self) -> Option<&alloy_rpc_types_eth::BlobTransactionSidecar> {
-        match self {
-            Self::Native(inner) => TransactionBuilder::blob_sidecar(inner),
-        }
+        delegate!(self.blob_sidecar())
     }
 
     fn set_blob_sidecar(&mut self, sidecar: alloy_rpc_types_eth::BlobTransactionSidecar) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::set_blob_sidecar(inner, sidecar),
-        }
+        delegate!(self.set_blob_sidecar(sidecar))
     }
 
     fn complete_type(&self, ty: <Zksync as Network>::TxType) -> Result<(), Vec<&'static str>> {
@@ -206,41 +165,27 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         let eth_ty = ty
             .as_eth_type()
             .expect("Era-specific types are not supported yet");
-        match self {
-            Self::Native(inner) => TransactionBuilder::complete_type(inner, eth_ty),
-        }
+        delegate!(self.complete_type(eth_ty))
     }
 
     fn can_submit(&self) -> bool {
-        match self {
-            Self::Native(inner) => TransactionBuilder::can_submit(inner),
-        }
+        delegate!(self.can_submit())
     }
 
     fn can_build(&self) -> bool {
-        match self {
-            Self::Native(inner) => TransactionBuilder::can_build(inner),
-        }
+        delegate!(self.can_build())
     }
 
     fn output_tx_type(&self) -> <Zksync as Network>::TxType {
-        match self {
-            Self::Native(inner) => TransactionBuilder::output_tx_type(inner).into(),
-        }
+        delegate!(self.output_tx_type()).into()
     }
 
     fn output_tx_type_checked(&self) -> Option<<Zksync as Network>::TxType> {
-        match self {
-            Self::Native(inner) => {
-                TransactionBuilder::output_tx_type_checked(inner).map(Into::into)
-            }
-        }
+        delegate!(self.output_tx_type_checked()).map(Into::into)
     }
 
     fn prep_for_submission(&mut self) {
-        match self {
-            Self::Native(inner) => TransactionBuilder::prep_for_submission(inner),
-        }
+        delegate!(self.prep_for_submission())
     }
 
     fn build_unsigned(
@@ -254,7 +199,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
 
         let result = TransactionBuilder::build_unsigned(inner);
         match result {
-            Ok(tx) => Ok(crate::network::unsigned_tx::TypedTransaction { inner: tx }),
+            Ok(tx) => Ok(crate::network::unsigned_tx::TypedTransaction::Native(tx)),
             Err(err) => {
                 let UnbuiltTransactionError { request, error } = err;
                 let wrapped_request = Self::Native(request);

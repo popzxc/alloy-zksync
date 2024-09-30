@@ -1,5 +1,5 @@
 [package]
-name = "alloy-era"
+name = "alloy-zksync"
 version = "0.1.0"
 edition = "2021"
 

@@ -7,8 +7,8 @@ use alloy::{
     // rpc::types::TransactionRequest,
     signers::local::PrivateKeySigner,
 };
-use alloy_era::{
-    network::{transaction_request::TransactionRequest, Era},
+use alloy_zksync::{
+    network::{transaction_request::TransactionRequest, Zksync},
     node_bindings::EraTestNode,
     wallet::EraWallet,
 };
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
 
     // Create a provider with the wallet.
     let rpc_url = era_test_node.endpoint().parse()?;
-    let provider = ProviderBuilder::<_, _, Era>::default()
+    let provider = ProviderBuilder::<_, _, Zksync>::default()
         .with_recommended_fillers()
         .wallet(wallet)
         .on_http(rpc_url);
@@ -42,10 +42,9 @@ async fn main() -> Result<()> {
         .with_value(U256::from(100));
 
     // Send the transaction and wait for inclusion.
-    let tx_hash = provider.send_transaction(tx).await?.tx_hash().clone();
-    //.watch().await?;
+    let receipt = provider.send_transaction(tx).await?.get_receipt().await?;
 
-    println!("Sent transaction: {tx_hash}");
+    println!("Got receipt: {receipt:#?}");
 
     Ok(())
 }

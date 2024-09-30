@@ -359,7 +359,7 @@ impl EraTestNode {
                 .read_line(&mut line)
                 .map_err(EraTestNodeError::ReadLineError)?;
             tracing::trace!(target: "era_test_node", line);
-            if let Some(addr) = line.trim().split("Node is ready at").skip(1).next() {
+            if let Some(addr) = line.trim().split("Node is ready at").nth(1) {
                 // <Node is ready at 127.0.0.1:8011>
                 // parse the actual port
                 port = SocketAddr::from_str(addr.trim())
@@ -368,7 +368,7 @@ impl EraTestNode {
                 break;
             }
 
-            if line.find("Private Key: ").is_some() {
+            if line.contains("Private Key: ") {
                 // Questionable but OK.
                 let key_str = line
                     .split("0x")

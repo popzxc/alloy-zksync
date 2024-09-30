@@ -16,6 +16,7 @@ pub enum TxType {
     Eip4844 = 3,
     /// Era-specific EIP712-based transaction type.
     EraEip712 = 0x71,
+    // TODO: L1-based transaction type
 }
 
 impl TxType {

@@ -12,11 +12,11 @@ pub mod tx_type;
 pub mod unsigned_tx;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Era {
+pub struct Zksync {
     _private: (),
 }
 
-impl Network for Era {
+impl Network for Zksync {
     type TxType = self::tx_type::TxType;
 
     type TxEnvelope = self::tx_envelope::TxEnvelope;

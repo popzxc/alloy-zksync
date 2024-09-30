@@ -2,7 +2,7 @@ use alloy_network::{
     Network, TransactionBuilder, TransactionBuilderError, UnbuiltTransactionError,
 };
 
-use super::Era;
+use super::Zksync;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,7 +35,7 @@ impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
     }
 }
 
-impl TransactionBuilder<Era> for TransactionRequest {
+impl TransactionBuilder<Zksync> for TransactionRequest {
     fn chain_id(&self) -> Option<alloy_primitives::ChainId> {
         self.inner.chain_id
     }
@@ -145,7 +145,7 @@ impl TransactionBuilder<Era> for TransactionRequest {
         self.inner.set_blob_sidecar(sidecar)
     }
 
-    fn complete_type(&self, ty: <Era as Network>::TxType) -> Result<(), Vec<&'static str>> {
+    fn complete_type(&self, ty: <Zksync as Network>::TxType) -> Result<(), Vec<&'static str>> {
         // TODO: cover era-specific types.
         let eth_ty = ty
             .as_eth_type()
@@ -161,11 +161,11 @@ impl TransactionBuilder<Era> for TransactionRequest {
         TransactionBuilder::can_build(&self.inner)
     }
 
-    fn output_tx_type(&self) -> <Era as Network>::TxType {
+    fn output_tx_type(&self) -> <Zksync as Network>::TxType {
         TransactionBuilder::output_tx_type(&self.inner).into()
     }
 
-    fn output_tx_type_checked(&self) -> Option<<Era as Network>::TxType> {
+    fn output_tx_type_checked(&self) -> Option<<Zksync as Network>::TxType> {
         TransactionBuilder::output_tx_type_checked(&self.inner).map(Into::into)
     }
 
@@ -175,7 +175,7 @@ impl TransactionBuilder<Era> for TransactionRequest {
 
     fn build_unsigned(
         self,
-    ) -> alloy_network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Era> {
+    ) -> alloy_network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Zksync> {
         use TransactionBuilderError::*;
 
         let result = TransactionBuilder::build_unsigned(self.inner);
@@ -201,10 +201,10 @@ impl TransactionBuilder<Era> for TransactionRequest {
         }
     }
 
-    async fn build<W: alloy_network::NetworkWallet<Era>>(
+    async fn build<W: alloy_network::NetworkWallet<Zksync>>(
         self,
         wallet: &W,
-    ) -> Result<<Era as Network>::TxEnvelope, TransactionBuilderError<Era>> {
+    ) -> Result<<Zksync as Network>::TxEnvelope, TransactionBuilderError<Zksync>> {
         Ok(wallet.sign_request(self).await?)
     }
 }

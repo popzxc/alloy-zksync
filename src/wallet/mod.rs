@@ -1,7 +1,7 @@
 use alloy_network::{Ethereum, NetworkWallet};
 use alloy_primitives::Address;
 
-use crate::network::Era;
+use crate::network::Zksync;
 
 #[derive(Debug, Clone)]
 pub struct EraWallet<T: NetworkWallet<Ethereum> + Clone> {
@@ -15,7 +15,7 @@ impl<T: NetworkWallet<Ethereum> + Clone> From<T> for EraWallet<T> {
 }
 
 #[async_trait::async_trait]
-impl<T: NetworkWallet<Ethereum> + Clone> NetworkWallet<Era> for EraWallet<T> {
+impl<T: NetworkWallet<Ethereum> + Clone> NetworkWallet<Zksync> for EraWallet<T> {
     fn default_signer_address(&self) -> Address {
         self.inner.default_signer_address()
     }

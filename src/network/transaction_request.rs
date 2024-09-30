@@ -4,12 +4,17 @@ use alloy_network::{
 
 use super::Zksync;
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TransactionRequest {
-    #[serde(flatten)]
-    inner: alloy_rpc_types_eth::transaction::TransactionRequest,
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+pub enum TransactionRequest {
+    Native(alloy_rpc_types_eth::transaction::TransactionRequest),
     // eip_712_meta: Eip712Meta,
+}
+
+impl Default for TransactionRequest {
+    fn default() -> Self {
+        Self::Native(Default::default())
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -19,130 +24,181 @@ struct Eip712Meta {
 
 impl From<crate::network::unsigned_tx::TypedTransaction> for TransactionRequest {
     fn from(value: crate::network::unsigned_tx::TypedTransaction) -> Self {
-        Self {
-            inner: From::from(value.inner),
-            // eip_712_meta: todo!(),
-        }
+        Self::Native(From::from(value.inner))
     }
 }
 
 impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
     fn from(value: crate::network::tx_envelope::TxEnvelope) -> Self {
-        Self {
-            inner: From::from(value.inner),
-            // eip_712_meta: todo!(),
-        }
+        Self::Native(From::from(value.inner))
     }
 }
 
 impl TransactionBuilder<Zksync> for TransactionRequest {
     fn chain_id(&self) -> Option<alloy_primitives::ChainId> {
-        self.inner.chain_id
+        match self {
+            Self::Native(inner) => TransactionBuilder::chain_id(inner),
+        }
     }
 
     fn set_chain_id(&mut self, chain_id: alloy_primitives::ChainId) {
-        self.inner.set_chain_id(chain_id)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_chain_id(inner, chain_id),
+        }
     }
 
     fn nonce(&self) -> Option<u64> {
-        TransactionBuilder::nonce(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::nonce(inner),
+        }
     }
 
     fn set_nonce(&mut self, nonce: u64) {
-        self.inner.set_nonce(nonce)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_nonce(inner, nonce),
+        }
     }
 
     fn input(&self) -> Option<&alloy_primitives::Bytes> {
-        TransactionBuilder::input(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::input(inner),
+        }
     }
 
     fn set_input<T: Into<alloy_primitives::Bytes>>(&mut self, input: T) {
-        self.inner.set_input(input)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_input(inner, input),
+        }
     }
 
     fn from(&self) -> Option<alloy_primitives::Address> {
-        TransactionBuilder::from(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::from(inner),
+        }
     }
 
     fn set_from(&mut self, from: alloy_primitives::Address) {
-        self.inner.set_from(from)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_from(inner, from),
+        }
     }
 
     fn kind(&self) -> Option<alloy_primitives::TxKind> {
-        self.inner.kind()
+        match self {
+            Self::Native(inner) => TransactionBuilder::kind(inner),
+        }
     }
 
     fn clear_kind(&mut self) {
-        self.inner.clear_kind()
+        match self {
+            Self::Native(inner) => TransactionBuilder::clear_kind(inner),
+        }
     }
 
     fn set_kind(&mut self, kind: alloy_primitives::TxKind) {
-        self.inner.set_kind(kind)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_kind(inner, kind),
+        }
     }
 
     fn value(&self) -> Option<alloy_primitives::U256> {
-        TransactionBuilder::value(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::value(inner),
+        }
     }
 
     fn set_value(&mut self, value: alloy_primitives::U256) {
-        self.inner.set_value(value)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_value(inner, value),
+        }
     }
 
     fn gas_price(&self) -> Option<u128> {
-        self.inner.gas_price()
+        match self {
+            Self::Native(inner) => TransactionBuilder::gas_price(inner),
+        }
     }
 
     fn set_gas_price(&mut self, gas_price: u128) {
-        self.inner.set_gas_price(gas_price)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_gas_price(inner, gas_price),
+        }
     }
 
     fn max_fee_per_gas(&self) -> Option<u128> {
-        self.inner.max_fee_per_gas
+        match self {
+            Self::Native(inner) => TransactionBuilder::max_fee_per_gas(inner),
+        }
     }
 
     fn set_max_fee_per_gas(&mut self, max_fee_per_gas: u128) {
-        self.inner.set_max_fee_per_gas(max_fee_per_gas)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_max_fee_per_gas(inner, max_fee_per_gas),
+        }
     }
 
     fn max_priority_fee_per_gas(&self) -> Option<u128> {
-        TransactionBuilder::max_priority_fee_per_gas(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::max_priority_fee_per_gas(inner),
+        }
     }
 
     fn set_max_priority_fee_per_gas(&mut self, max_priority_fee_per_gas: u128) {
-        self.inner
-            .set_max_priority_fee_per_gas(max_priority_fee_per_gas)
+        match self {
+            Self::Native(inner) => {
+                TransactionBuilder::set_max_priority_fee_per_gas(inner, max_priority_fee_per_gas)
+            }
+        }
     }
 
     fn max_fee_per_blob_gas(&self) -> Option<u128> {
-        self.inner.max_fee_per_blob_gas()
+        match self {
+            Self::Native(inner) => TransactionBuilder::max_fee_per_blob_gas(inner),
+        }
     }
 
     fn set_max_fee_per_blob_gas(&mut self, max_fee_per_blob_gas: u128) {
-        self.inner.set_max_fee_per_blob_gas(max_fee_per_blob_gas)
+        match self {
+            Self::Native(inner) => {
+                TransactionBuilder::set_max_fee_per_blob_gas(inner, max_fee_per_blob_gas)
+            }
+        }
     }
 
     fn gas_limit(&self) -> Option<u128> {
-        TransactionBuilder::gas_limit(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::gas_limit(inner),
+        }
     }
 
     fn set_gas_limit(&mut self, gas_limit: u128) {
-        self.inner.set_gas_limit(gas_limit)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_gas_limit(inner, gas_limit),
+        }
     }
 
     fn access_list(&self) -> Option<&alloy_rpc_types_eth::AccessList> {
-        TransactionBuilder::access_list(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::access_list(inner),
+        }
     }
 
     fn set_access_list(&mut self, access_list: alloy_rpc_types_eth::AccessList) {
-        self.inner.set_access_list(access_list)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_access_list(inner, access_list),
+        }
     }
 
     fn blob_sidecar(&self) -> Option<&alloy_rpc_types_eth::BlobTransactionSidecar> {
-        TransactionBuilder::blob_sidecar(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::blob_sidecar(inner),
+        }
     }
 
     fn set_blob_sidecar(&mut self, sidecar: alloy_rpc_types_eth::BlobTransactionSidecar) {
-        self.inner.set_blob_sidecar(sidecar)
+        match self {
+            Self::Native(inner) => TransactionBuilder::set_blob_sidecar(inner, sidecar),
+        }
     }
 
     fn complete_type(&self, ty: <Zksync as Network>::TxType) -> Result<(), Vec<&'static str>> {
@@ -150,27 +206,41 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         let eth_ty = ty
             .as_eth_type()
             .expect("Era-specific types are not supported yet");
-        TransactionBuilder::complete_type(&self.inner, eth_ty)
+        match self {
+            Self::Native(inner) => TransactionBuilder::complete_type(inner, eth_ty),
+        }
     }
 
     fn can_submit(&self) -> bool {
-        TransactionBuilder::can_submit(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::can_submit(inner),
+        }
     }
 
     fn can_build(&self) -> bool {
-        TransactionBuilder::can_build(&self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::can_build(inner),
+        }
     }
 
     fn output_tx_type(&self) -> <Zksync as Network>::TxType {
-        TransactionBuilder::output_tx_type(&self.inner).into()
+        match self {
+            Self::Native(inner) => TransactionBuilder::output_tx_type(inner).into(),
+        }
     }
 
     fn output_tx_type_checked(&self) -> Option<<Zksync as Network>::TxType> {
-        TransactionBuilder::output_tx_type_checked(&self.inner).map(Into::into)
+        match self {
+            Self::Native(inner) => {
+                TransactionBuilder::output_tx_type_checked(inner).map(Into::into)
+            }
+        }
     }
 
     fn prep_for_submission(&mut self) {
-        TransactionBuilder::prep_for_submission(&mut self.inner)
+        match self {
+            Self::Native(inner) => TransactionBuilder::prep_for_submission(inner),
+        }
     }
 
     fn build_unsigned(
@@ -178,12 +248,16 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
     ) -> alloy_network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Zksync> {
         use TransactionBuilderError::*;
 
-        let result = TransactionBuilder::build_unsigned(self.inner);
+        let inner = match self {
+            Self::Native(inner) => inner,
+        };
+
+        let result = TransactionBuilder::build_unsigned(inner);
         match result {
             Ok(tx) => Ok(crate::network::unsigned_tx::TypedTransaction { inner: tx }),
             Err(err) => {
                 let UnbuiltTransactionError { request, error } = err;
-                let wrapped_request = Self { inner: request };
+                let wrapped_request = Self::Native(request);
                 let error = match error {
                     InvalidTransactionRequest(tx, fields) => {
                         InvalidTransactionRequest(tx.into(), fields)

@@ -1,4 +1,4 @@
-use alloy_network::Ethereum;
+// use alloy_network::Ethereum;
 use alloy_network::Network;
 
 pub mod header;
@@ -23,15 +23,15 @@ impl Network for Zksync {
 
     type UnsignedTx = self::unsigned_tx::TypedTransaction;
 
-    type ReceiptEnvelope = <Ethereum as Network>::ReceiptEnvelope;
+    type ReceiptEnvelope = self::receipt_envelope::ReceiptEnvelope;
 
-    type Header = <Ethereum as Network>::Header;
+    type Header = self::header::Header;
 
     type TransactionRequest = self::transaction_request::TransactionRequest;
 
-    type TransactionResponse = <Ethereum as Network>::TransactionResponse;
+    type TransactionResponse = self::transaction_response::TransactionResponse;
 
-    type ReceiptResponse = <Ethereum as Network>::ReceiptResponse;
+    type ReceiptResponse = self::receipt_response::ReceiptResponse;
 
-    type HeaderResponse = <Ethereum as Network>::HeaderResponse;
+    type HeaderResponse = self::header_response::HeaderResponse;
 }

@@ -1,10 +1,5 @@
-use std::any::Any;
-
 use alloy_consensus::Signed;
-use alloy_network::{
-    eip2718::{Decodable2718, Encodable2718},
-    TransactionBuilder,
-};
+use alloy_network::eip2718::{Decodable2718, Encodable2718};
 use alloy_rlp::Header;
 
 use super::unsigned_tx::eip712::TxEip712;
@@ -13,16 +8,6 @@ use super::unsigned_tx::eip712::TxEip712;
 pub enum TxEnvelope {
     Native(alloy_consensus::TxEnvelope),
     Eip712(Signed<TxEip712>),
-}
-
-/// Macro that delegates a method call to the inner variant implementation.
-macro_rules! delegate {
-    ($_self:ident.$method:ident($($args:expr),*)) => {
-        match $_self {
-            Self::Native(inner) => inner.$method($($args),*),
-            Self::Eip712(inner) => inner.$method($($args),*),
-        }
-    };
 }
 
 impl Encodable2718 for TxEnvelope {

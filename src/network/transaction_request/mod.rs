@@ -4,8 +4,6 @@ use alloy_network::{
 
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
-pub mod eip712;
-
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TransactionRequest {
     #[serde(flatten)]
@@ -44,13 +42,6 @@ impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
     }
 }
 
-/// Macro that delegates a method call to the inner variant implementation.
-// TODO: not necessary, to be removed.
-macro_rules! delegate {
-    ($_self:ident.$inner:ident.$method:ident($($args:expr),*)) => {
-        TransactionBuilder::$method($_self.$inner, $($args),*)
-    };
-}
 impl TransactionBuilder<Zksync> for TransactionRequest {
     fn chain_id(&self) -> Option<alloy_primitives::ChainId> {
         TransactionBuilder::chain_id(&self.base)

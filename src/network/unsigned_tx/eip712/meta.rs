@@ -1,4 +1,4 @@
-use alloy_primitives::{keccak256, Address, Bytes, FixedBytes, U256};
+use alloy_primitives::{Address, Bytes, FixedBytes, U256};
 use alloy_rlp::{Decodable, Encodable, Header};
 use serde::{Deserialize, Serialize};
 

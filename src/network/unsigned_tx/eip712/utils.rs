@@ -1,5 +1,3 @@
-use std::num::TryFromIntError;
-
 use k256::sha2::{self, Digest};
 
 // Bytecode length in words must fit in u16.
@@ -33,7 +31,7 @@ pub fn hash_bytecode(bytecode: &[u8]) -> Result<[u8; 32], BytecodeHashError> {
         return Err(BytecodeHashError::BytecodeNotAligned);
     }
 
-    let bytecode_length = (bytecode.len() / WORD_SIZE);
+    let bytecode_length = bytecode.len() / WORD_SIZE;
     let bytecode_length = u16::try_from(bytecode_length).map_err(|_| {
         BytecodeHashError::BytecodeLengthExceedsLimit {
             num_words: bytecode_length,
@@ -52,17 +50,6 @@ pub fn hash_bytecode(bytecode: &[u8]) -> Result<[u8; 32], BytecodeHashError> {
 
     Ok(contract_hash)
 }
-
-// pub(crate) fn rlp_append_option<T>(stream: &mut RlpStream, value: Option<T>)
-// where
-//     T: Encodable,
-// {
-//     if let Some(v) = value {
-//         stream.append(&v);
-//     } else {
-//         stream.append(&"");
-//     }
-// }
 
 #[cfg(test)]
 mod tests {

@@ -1,6 +1,6 @@
 use super::{utils::hash_bytecode, TxEip712};
 use alloy_primitives::{Address, FixedBytes, U256};
-use alloy_sol_types::{eip712_domain, sol, Eip712Domain, SolStruct, SolType};
+use alloy_sol_types::{eip712_domain, sol, Eip712Domain, SolStruct};
 
 impl TxEip712 {
     fn as_sol_tx(&self) -> Transaction {
@@ -48,11 +48,6 @@ impl TxEip712 {
     pub(super) fn eip712_hash_struct(&self) -> FixedBytes<32> {
         self.as_sol_tx().eip712_hash_struct()
     }
-
-    pub(super) fn eip712_signing_hash(&self) -> FixedBytes<32> {
-        let domain = zksync_eip712_domain(self.chain_id);
-        self.as_sol_tx().eip712_signing_hash(&domain)
-    }
 }
 
 fn address_to_u256(address: &Address) -> U256 {
@@ -90,8 +85,6 @@ sol! {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
-
-    use crate::network::unsigned_tx::eip712::meta::Eip712Meta;
 
     use super::*;
 

@@ -1,7 +1,4 @@
-use std::mem;
-
 use alloy_consensus::{SignableTransaction, Signed, Transaction};
-use alloy_eips::eip2930::AccessList;
 use alloy_primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
 use alloy_rlp::{BufMut, Decodable, Encodable, Header};
 use alloy_rpc_types_eth::TransactionInput;
@@ -101,13 +98,6 @@ impl TxEip712 {
                 }
             }
         }
-    }
-
-    // TODO: Implement efficient `length`
-    fn payload_length_unoptimized(&self, signature: &Signature) -> usize {
-        let mut out = Vec::new();
-        self.encode_with_signature_fields(signature, &mut out);
-        out.len()
     }
 
     /// Inner encoding function that is used for both rlp [`Encodable`] trait and for calculating
@@ -349,19 +339,19 @@ impl SignableTransaction<Signature> for TxEip712 {
 //     }
 // }
 
-impl Into<alloy_rpc_types_eth::transaction::TransactionRequest> for TxEip712 {
-    fn into(self) -> alloy_rpc_types_eth::transaction::TransactionRequest {
-        alloy_rpc_types_eth::transaction::TransactionRequest {
-            transaction_type: Some(self.tx_type() as u8),
-            chain_id: Some(self.chain_id),
-            nonce: Some((self.nonce % U256::from(u64::MAX)).try_into().unwrap()), // TODO: Is decomposed nonce fine here?
-            gas: Some(self.gas_limit),
-            max_fee_per_gas: Some(self.max_fee_per_gas),
-            max_priority_fee_per_gas: Some(self.max_priority_fee_per_gas),
-            to: Some(self.to),
-            from: Some(self.from),
-            value: Some(self.value),
-            input: TransactionInput::new(self.input),
+impl From<TxEip712> for alloy_rpc_types_eth::transaction::TransactionRequest {
+    fn from(tx: TxEip712) -> Self {
+        Self {
+            transaction_type: Some(tx.tx_type() as u8),
+            chain_id: Some(tx.chain_id),
+            nonce: Some((tx.nonce % U256::from(u64::MAX)).try_into().unwrap()), // TODO: Is decomposed nonce fine here?
+            gas: Some(tx.gas_limit),
+            max_fee_per_gas: Some(tx.max_fee_per_gas),
+            max_priority_fee_per_gas: Some(tx.max_priority_fee_per_gas),
+            to: Some(tx.to),
+            from: Some(tx.from),
+            value: Some(tx.value),
+            input: TransactionInput::new(tx.input),
             access_list: None,
             blob_versioned_hashes: None,
             max_fee_per_blob_gas: None,
@@ -379,9 +369,7 @@ mod tests {
 
     use super::TxEip712;
     use alloy_consensus::SignableTransaction;
-    use alloy_eips::eip2930::AccessList;
-    use alloy_primitives::{address, b256, hex, Address, FixedBytes, Signature, B256, U256};
-    use alloy_rlp::Decodable;
+    use alloy_primitives::{hex, Address, FixedBytes, Signature, B256, U256};
 
     #[test]
     fn decode_eip712_tx() {

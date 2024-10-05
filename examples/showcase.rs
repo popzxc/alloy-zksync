@@ -1,7 +1,7 @@
 //! Example of using a local wallet to sign and send a transaction.
 
 use alloy::{
-    network::{EthereumWallet, TransactionBuilder},
+    network::TransactionBuilder,
     primitives::{address, U256},
     providers::{Provider, ProviderBuilder},
     signers::local::PrivateKeySigner,
@@ -9,7 +9,7 @@ use alloy::{
 use alloy_zksync::{
     network::{transaction_request::TransactionRequest, Zksync},
     node_bindings::EraTestNode,
-    wallet::EraWallet,
+    wallet::ZksyncWallet,
 };
 
 use anyhow::Result;
@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
     // The following code is for testing only. Set up signer from private key, be aware of danger.
     // let signer: PrivateKeySigner = "<PRIVATE_KEY>".parse().expect("should parse private key");
     let signer: PrivateKeySigner = era_test_node.keys()[0].clone().into();
-    let wallet = EraWallet::from(EthereumWallet::from(signer));
+    let wallet = ZksyncWallet::from(signer);
 
     // Create a provider with the wallet.
     let rpc_url = era_test_node.endpoint().parse()?;

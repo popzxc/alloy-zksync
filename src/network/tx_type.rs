@@ -14,8 +14,8 @@ pub enum TxType {
     Eip1559 = 2,
     /// EIP-4844 transaction type.
     Eip4844 = 3,
-    /// Era-specific EIP712-based transaction type.
-    EraEip712 = 0x71,
+    /// ZKsync-specific EIP712-based transaction type.
+    Eip712 = 0x71,
     // TODO: L1-based transaction type
 }
 
@@ -26,7 +26,7 @@ impl TxType {
             TxType::Eip2930 => alloy_consensus::TxType::Eip2930,
             TxType::Eip1559 => alloy_consensus::TxType::Eip1559,
             TxType::Eip4844 => alloy_consensus::TxType::Eip4844,
-            TxType::EraEip712 => return None,
+            TxType::Eip712 => return None,
         })
     }
 }
@@ -51,7 +51,7 @@ impl fmt::Display for TxType {
             Self::Eip2930 => write!(f, "EIP-2930"),
             Self::Eip1559 => write!(f, "EIP-1559"),
             Self::Eip4844 => write!(f, "EIP-4844"),
-            Self::EraEip712 => write!(f, "Era EIP-712"),
+            Self::Eip712 => write!(f, "Era EIP-712"),
         }
     }
 }
@@ -65,7 +65,7 @@ impl TryFrom<u8> for TxType {
             1 => Self::Eip2930,
             2 => Self::Eip1559,
             3 => Self::Eip4844,
-            0x71 => Self::EraEip712,
+            0x71 => Self::Eip712,
             _ => return Err(Eip2718Error::UnexpectedType(value)),
         })
     }

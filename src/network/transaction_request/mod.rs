@@ -9,6 +9,7 @@ pub mod eip712;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 pub enum TransactionRequest {
+    // TODO: it's a builder, should not be a enum. Instead store `eip712meta` as an option.
     Native(alloy_rpc_types_eth::transaction::TransactionRequest),
     // eip_712_meta: Eip712Meta,
 }

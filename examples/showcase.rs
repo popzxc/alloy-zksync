@@ -4,7 +4,6 @@ use alloy::{
     network::{EthereumWallet, TransactionBuilder},
     primitives::{address, U256},
     providers::{Provider, ProviderBuilder},
-    // rpc::types::TransactionRequest,
     signers::local::PrivateKeySigner,
 };
 use alloy_zksync::{
@@ -18,7 +17,7 @@ use anyhow::Result;
 #[tokio::main]
 async fn main() -> Result<()> {
     // Spin up a local era-test-node node.
-    // Ensure `anvil` is available in $PATH.
+    // Ensure `era_test_node` is available in $PATH.
     let era_test_node = EraTestNode::new().try_spawn()?;
 
     // Set up signer from the first default era-test-node account (Alice).

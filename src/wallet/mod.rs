@@ -42,6 +42,14 @@ impl<T: NetworkWallet<Ethereum> + Clone> NetworkWallet<Zksync> for EraWallet<T> 
                 let signed = self.inner.sign_transaction_from(sender, inner).await?;
                 Ok(crate::network::tx_envelope::TxEnvelope::Native(signed))
             }
+            crate::network::unsigned_tx::TypedTransaction::Eip712(inner) => {
+                todo!("Eip712 signing is not yet implemented");
+                // let signed = self
+                //     .inner
+                //     .sign_transaction_from(sender, inner.into())
+                //     .await?;
+                // Ok(crate::network::tx_envelope::TxEnvelope::Eip712(signed))
+            }
         }
     }
 }

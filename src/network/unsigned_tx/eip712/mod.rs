@@ -4,11 +4,13 @@ use alloy_consensus::{SignableTransaction, Signed, Transaction};
 use alloy_eips::eip2930::AccessList;
 use alloy_primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
 use alloy_rlp::{BufMut, Decodable, Encodable, Header};
+use alloy_rpc_types_eth::TransactionInput;
 use alloy_signer::Signature;
-use meta::Eip712Meta;
 use serde::{Deserialize, Serialize};
 
 use crate::network::tx_type::TxType;
+
+pub use self::meta::{Eip712Meta, PaymasterParams};
 
 mod meta;
 mod signing;
@@ -101,94 +103,35 @@ impl TxEip712 {
         }
     }
 
-    /// Outputs the length of the transaction's fields, without a RLP header.
-    #[doc(hidden)]
-    pub fn fields_len(&self) -> usize {
-        let mut len = 0;
-        len += self.chain_id.length();
-        len += self.nonce.length();
-        len += self.max_priority_fee_per_gas.length();
-        len += self.max_fee_per_gas.length();
-        len += self.gas_limit.length();
-        len += self.to.length();
-        len += self.value.length();
-        len += self.input.0.length();
-        len
-    }
-
-    /// Encodes the transaction fields
-    pub(crate) fn encode_fields_for_signing(&self, out: &mut dyn alloy_rlp::BufMut) {
-        self.chain_id.encode(out);
-        self.nonce.encode(out);
-        self.max_priority_fee_per_gas.encode(out);
-        self.max_fee_per_gas.encode(out);
-        self.gas_limit.encode(out);
-        self.to.encode(out);
-        self.value.encode(out);
-        self.input.0.encode(out);
-    }
-
-    /// Returns what the encoded length should be, if the transaction were RLP encoded with the
-    /// given signature, depending on the value of `with_header`.
-    ///
-    /// If `with_header` is `true`, the payload length will include the RLP header length.
-    /// If `with_header` is `false`, the payload length will not include the RLP header length.
-    pub(crate) fn encoded_len_with_signature(
-        &self,
-        signature: &Signature,
-        with_header: bool,
-    ) -> usize {
-        // this counts the tx fields and signature fields
-        let payload_length = self.fields_len() + signature.rlp_vrs_len();
-
-        // this counts:
-        // * tx type byte
-        // * inner header length
-        // * inner payload length
-        let inner_payload_length = 1
-            + Header {
-                list: true,
-                payload_length,
-            }
-            .length()
-            + payload_length;
-
-        if with_header {
-            // header length plus length of the above, wrapped with a string header
-            Header {
-                list: false,
-                payload_length: inner_payload_length,
-            }
-            .length()
-                + inner_payload_length
-        } else {
-            inner_payload_length
-        }
+    // TODO: Implement efficient `length`
+    fn payload_length_unoptimized(&self, signature: &Signature) -> usize {
+        let mut out = Vec::new();
+        self.encode_with_signature_fields(signature, &mut out);
+        out.len()
     }
 
     /// Inner encoding function that is used for both rlp [`Encodable`] trait and for calculating
     /// hash that for eip2718 does not require a rlp header.
-    #[doc(hidden)]
-    pub fn encode_with_signature(
+    pub(crate) fn encode_with_signature(
         &self,
         signature: &Signature,
         out: &mut dyn BufMut,
-        with_header: bool,
+        // with_header: bool,
     ) {
-        let payload_length = self.fields_len() + signature.rlp_vrs_len();
-        if with_header {
-            Header {
-                list: false,
-                payload_length: 1
-                    + Header {
-                        list: true,
-                        payload_length,
-                    }
-                    .length()
-                    + payload_length,
-            }
-            .encode(out);
-        }
+        // if with_header {
+        //     let payload_length = self.payload_length_unoptimized(signature);
+        //     Header {
+        //         list: false,
+        //         payload_length: 1
+        //             + Header {
+        //                 list: true,
+        //                 payload_length,
+        //             }
+        //             .length()
+        //             + payload_length,
+        //     }
+        //     .encode(out);
+        // }
         out.put_u8(self.tx_type() as u8);
         self.encode_with_signature_fields(signature, out);
     }
@@ -247,6 +190,19 @@ impl TxEip712 {
         Ok(signed)
     }
 
+    pub(crate) fn fields_len(&self) -> usize {
+        self.nonce.length()
+            + self.max_priority_fee_per_gas.length()
+            + self.max_fee_per_gas.length()
+            + self.gas_limit.length()
+            + self.to.length()
+            + self.value.length()
+            + self.input.length()
+            + self.chain_id.length()
+            + self.from.length()
+            + self.eip712_meta.length()
+    }
+
     /// Encodes the transaction from RLP bytes, including the signature. This __does not__ encode a
     /// tx type byte or string header.
     ///
@@ -258,8 +214,18 @@ impl TxEip712 {
             payload_length,
         };
         header.encode(out);
-        todo!("encode fields");
+
+        self.nonce.encode(out);
+        self.max_priority_fee_per_gas.encode(out);
+        self.max_fee_per_gas.encode(out);
+        self.gas_limit.encode(out);
+        self.to.encode(out);
+        self.value.encode(out);
+        self.input.0.encode(out);
         signature.write_rlp_vrs(out);
+        self.chain_id.encode(out);
+        self.from.encode(out);
+        self.eip712_meta.encode(out);
     }
 
     /// Get transaction type
@@ -268,18 +234,18 @@ impl TxEip712 {
         TxType::Eip712
     }
 
-    /// Calculates a heuristic for the in-memory size of the [TxEip712] transaction.
-    #[inline]
-    pub fn size(&self) -> usize {
-        mem::size_of::<ChainId>() + // chain_id
-        mem::size_of::<u64>() + // nonce
-        mem::size_of::<u64>() + // gas_limit
-        mem::size_of::<u128>() + // max_fee_per_gas
-        mem::size_of::<u128>() + // max_priority_fee_per_gas
-        self.to.size() + // to
-        mem::size_of::<U256>() + // value
-        self.input.len() // input
-    }
+    // /// Calculates a heuristic for the in-memory size of the [TxEip712] transaction.
+    // #[inline]
+    // pub fn size(&self) -> usize {
+    //     mem::size_of::<ChainId>() + // chain_id
+    //     mem::size_of::<u64>() + // nonce
+    //     mem::size_of::<u64>() + // gas_limit
+    //     mem::size_of::<u128>() + // max_fee_per_gas
+    //     mem::size_of::<u128>() + // max_priority_fee_per_gas
+    //     self.to.size() + // to
+    //     mem::size_of::<U256>() + // value
+    //     self.input.len() // input
+    // }
 }
 
 impl Transaction for TxEip712 {
@@ -320,20 +286,16 @@ impl SignableTransaction<Signature> for TxEip712 {
     }
 
     fn encode_for_signing(&self, out: &mut dyn alloy_rlp::BufMut) {
-        // TODO: Cache values via Lazy?
-        let eip712_domain_typehash =
-            keccak256("EIP712Domain(string name,string version,uint256 chainId)");
-        let eip712_transaction_type_hash = keccak256("Transaction(uint256 txType,uint256 from,uint256 to,uint256 gasLimit,uint256 gasPerPubdataByteLimit,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 paymaster,uint256 nonce,uint256 value,bytes data,bytes32[] factoryDeps,bytes paymasterInput)");
-
-        // let factory_deps_hash =
-
-        // out.put_u8(self.tx_type() as u8);
-        // self.encode(out)
+        // Reimplementation of `SolStruct::eip712_signing_hash`
+        out.put_u8(0x19);
+        out.put_u8(0x01);
+        out.put_slice(self.domain_hash().as_slice());
+        out.put_slice(self.eip712_hash_struct().as_slice());
     }
 
     fn payload_len_for_signature(&self) -> usize {
-        todo!()
-        // self.length() + 1
+        // 2 bytes for the header, 32 bytes for the domain hash, 32 bytes for the transaction hash
+        2 + 32 + 32
     }
 
     fn into_signed(self, signature: Signature) -> Signed<Self> {
@@ -342,9 +304,10 @@ impl SignableTransaction<Signature> for TxEip712 {
         // signature.
         let signature = signature.with_parity_bool();
 
-        let mut buf = Vec::with_capacity(self.encoded_len_with_signature(&signature, false));
-        self.encode_with_signature(&signature, &mut buf, false);
-        let hash = keccak256(&buf);
+        let mut buf = [0u8; 64];
+        buf[..32].copy_from_slice(self.signature_hash().as_slice());
+        buf[32..].copy_from_slice(keccak256(signature.as_bytes()).as_slice());
+        let hash = keccak256(buf);
 
         Signed::new_unchecked(self, signature, hash)
     }
@@ -386,14 +349,38 @@ impl SignableTransaction<Signature> for TxEip712 {
 //     }
 // }
 
+impl Into<alloy_rpc_types_eth::transaction::TransactionRequest> for TxEip712 {
+    fn into(self) -> alloy_rpc_types_eth::transaction::TransactionRequest {
+        alloy_rpc_types_eth::transaction::TransactionRequest {
+            transaction_type: Some(self.tx_type() as u8),
+            chain_id: Some(self.chain_id),
+            nonce: Some((self.nonce % U256::from(u64::MAX)).try_into().unwrap()), // TODO: Is decomposed nonce fine here?
+            gas: Some(self.gas_limit),
+            max_fee_per_gas: Some(self.max_fee_per_gas),
+            max_priority_fee_per_gas: Some(self.max_priority_fee_per_gas),
+            to: Some(self.to),
+            from: Some(self.from),
+            value: Some(self.value),
+            input: TransactionInput::new(self.input),
+            access_list: None,
+            blob_versioned_hashes: None,
+            max_fee_per_blob_gas: None,
+            gas_price: None,
+            sidecar: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::network::unsigned_tx::eip712::Eip712Meta;
 
     use super::TxEip712;
     use alloy_consensus::SignableTransaction;
     use alloy_eips::eip2930::AccessList;
-    use alloy_primitives::{address, b256, hex, Address, Signature, B256, U256};
+    use alloy_primitives::{address, b256, hex, Address, FixedBytes, Signature, B256, U256};
     use alloy_rlp::Decodable;
 
     #[test]
@@ -403,6 +390,51 @@ mod tests {
         println!("222");
         let tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
         println!("Tx is {tx:#?}");
+    }
+
+    #[test]
+    fn test_eip712_tx() {
+        let eip712_meta = Eip712Meta {
+            gas_per_pubdata: U256::from(4),
+            factory_deps: vec![vec![2; 32].into()],
+            custom_signature: Some(vec![].into()),
+            paymaster_params: None,
+        };
+        let tx = TxEip712 {
+            chain_id: 270,
+            from: Address::from_str("0xe30f4fb40666753a7596d315f2f1f1d140d1508b").unwrap(),
+            to: Address::from_str("0x82112600a140ceaa9d7da373bb65453f7d99af4b")
+                .unwrap()
+                .into(),
+            nonce: U256::from(1),
+            value: U256::from(10),
+            gas_limit: 12,
+            max_fee_per_gas: 11,
+            max_priority_fee_per_gas: 0,
+            input: vec![0x01, 0x02, 0x03].into(),
+            eip712_meta,
+        };
+        let expected_signature_hash = FixedBytes::<32>::from_str(
+            "0xfc76820a67d9b1b351f2ac661e6d2bcca1c67508ae4930e036f540fa135875fe",
+        )
+        .unwrap();
+        assert_eq!(tx.signature_hash(), expected_signature_hash);
+
+        let signature = Signature::from_str("0x3faf83b5451ad3001f96f577b0bb5dfcaa7769ab11908f281dc6b15c45a3986f0325197832aac9a7ab2f5a83873834d457e0d22c1e72377d45364c6968f8ac3b1c").unwrap();
+        let recovered_signer = signature
+            .recover_address_from_prehash(&tx.signature_hash())
+            .unwrap();
+        assert_eq!(recovered_signer, tx.from);
+
+        let mut buf = Vec::new();
+        tx.encode_with_signature_fields(&signature, &mut buf);
+        let decoded = TxEip712::decode_signed_fields(&mut &buf[..]).unwrap();
+        assert_eq!(decoded, tx.into_signed(signature));
+
+        let expected_hash =
+            B256::from_str("0xb85668399db249d62d06bbc59eace82e01364602fb7159e161ca810ff6ddbbf4")
+                .unwrap();
+        assert_eq!(*decoded.hash(), expected_hash);
     }
 
     // #[test]

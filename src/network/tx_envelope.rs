@@ -1,8 +1,18 @@
-use alloy_network::eip2718::{Decodable2718, Encodable2718};
+use std::any::Any;
+
+use alloy_consensus::Signed;
+use alloy_network::{
+    eip2718::{Decodable2718, Encodable2718},
+    TransactionBuilder,
+};
+use alloy_rlp::Header;
+
+use super::unsigned_tx::eip712::TxEip712;
 
 #[derive(Debug)]
 pub enum TxEnvelope {
     Native(alloy_consensus::TxEnvelope),
+    Eip712(Signed<TxEip712>),
 }
 
 /// Macro that delegates a method call to the inner variant implementation.
@@ -10,21 +20,41 @@ macro_rules! delegate {
     ($_self:ident.$method:ident($($args:expr),*)) => {
         match $_self {
             Self::Native(inner) => inner.$method($($args),*),
+            Self::Eip712(inner) => inner.$method($($args),*),
         }
     };
 }
 
 impl Encodable2718 for TxEnvelope {
     fn type_flag(&self) -> Option<u8> {
-        delegate!(self.type_flag())
+        match self {
+            Self::Native(inner) => inner.type_flag(),
+            Self::Eip712(inner) => Some(inner.tx().tx_type() as u8),
+        }
     }
 
     fn encode_2718_len(&self) -> usize {
-        delegate!(self.encode_2718_len())
+        match self {
+            Self::Native(inner) => inner.encode_2718_len(),
+            Self::Eip712(inner) => {
+                let payload_length = inner.tx().fields_len() + inner.signature().rlp_vrs_len();
+                Header {
+                    list: true,
+                    payload_length,
+                }
+                .length()
+                    + payload_length
+            }
+        }
     }
 
     fn encode_2718(&self, out: &mut dyn alloy_primitives::bytes::BufMut) {
-        delegate!(self.encode_2718(out))
+        match self {
+            Self::Native(inner) => inner.encode_2718(out),
+            Self::Eip712(tx) => {
+                tx.tx().encode_with_signature(tx.signature(), out);
+            }
+        }
     }
 }
 

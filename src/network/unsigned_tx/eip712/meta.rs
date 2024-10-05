@@ -1,5 +1,5 @@
 use alloy_primitives::{keccak256, Address, Bytes, FixedBytes, U256};
-use alloy_rlp::{Decodable, Header};
+use alloy_rlp::{Decodable, Encodable, Header};
 use serde::{Deserialize, Serialize};
 
 use super::utils::{hash_bytecode, BytecodeHashError};
@@ -30,10 +30,7 @@ impl Eip712Meta {
 impl Decodable for Eip712Meta {
     fn decode(buf: &mut &[u8]) -> alloy_rlp::Result<Self> {
         fn opt_decode<T: Decodable>(buf: &mut &[u8]) -> alloy_rlp::Result<Option<T>> {
-            if buf.is_empty() {
-                return Ok(None);
-            }
-            Ok(Some(Decodable::decode(buf)?))
+            Ok(Decodable::decode(buf).ok()) // TODO: better validation of error?
         }
 
         let gas_per_pubdata = Decodable::decode(buf)?;
@@ -48,6 +45,27 @@ impl Decodable for Eip712Meta {
             paymaster_params,
         })
     }
+}
+
+impl Encodable for Eip712Meta {
+    fn encode(&self, out: &mut dyn alloy_rlp::BufMut) {
+        fn opt_encode<T>(stream: &mut dyn alloy_rlp::BufMut, value: Option<T>)
+        where
+            T: Encodable,
+        {
+            if let Some(v) = value {
+                v.encode(stream);
+            } else {
+                "".encode(stream);
+            }
+        }
+        self.gas_per_pubdata.encode(out);
+        self.factory_deps.encode(out);
+        opt_encode(out, self.custom_signature.clone());
+        opt_encode(out, self.paymaster_params.clone());
+    }
+
+    // TODO: Implement `length` method
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, PartialEq, Debug, Eq, Hash)]
@@ -66,4 +84,13 @@ impl Decodable for PaymasterParams {
             paymaster_input: dbg!(Decodable::decode(payload_view))?,
         })
     }
+}
+
+impl Encodable for PaymasterParams {
+    fn encode(&self, out: &mut dyn alloy_rlp::BufMut) {
+        self.paymaster.encode(out);
+        self.paymaster_input.encode(out);
+    }
+
+    // TODO: implement length method
 }

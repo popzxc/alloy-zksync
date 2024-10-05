@@ -1,6 +1,9 @@
 use alloy_network::{
     Network, TransactionBuilder, TransactionBuilderError, UnbuiltTransactionError,
 };
+use alloy_primitives::U256;
+
+use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
@@ -10,6 +13,16 @@ pub struct TransactionRequest {
     base: alloy_rpc_types_eth::transaction::TransactionRequest,
     #[serde(skip_serializing_if = "Option::is_none")]
     eip_712_meta: Option<Eip712Meta>,
+}
+
+// TODO: Extension trait for `TransactionBuilder`?
+impl TransactionRequest {
+    pub fn with_gas_per_pubdata(mut self, gas_per_pubdata: U256) -> Self {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .gas_per_pubdata = gas_per_pubdata;
+        self
+    }
 }
 
 impl From<crate::network::unsigned_tx::TypedTransaction> for TransactionRequest {
@@ -41,6 +54,8 @@ impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
         }
     }
 }
+
+// TODO: transactionbuilder for other networks
 
 impl TransactionBuilder<Zksync> for TransactionRequest {
     fn chain_id(&self) -> Option<alloy_primitives::ChainId> {
@@ -153,10 +168,16 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
 
     fn complete_type(&self, ty: <Zksync as Network>::TxType) -> Result<(), Vec<&'static str>> {
         // TODO: cover era-specific types.
-        let eth_ty = ty
-            .as_eth_type()
-            .expect("Era-specific types are not supported yet");
-        TransactionBuilder::complete_type(&self.base, eth_ty)
+        match ty {
+            TxType::Eip712 => {
+                // TODO: Should check gas per pubdata?
+                TransactionBuilder::complete_type(&self.base, alloy_consensus::TxType::Eip1559)
+            }
+            _ if ty.as_eth_type().is_some() => {
+                TransactionBuilder::complete_type(&self.base, ty.as_eth_type().unwrap())
+            }
+            _ => Err(vec!["Unsupported transaction type"]),
+        }
     }
 
     fn can_submit(&self) -> bool {
@@ -164,18 +185,44 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
     }
 
     fn can_build(&self) -> bool {
+        if self.eip_712_meta.is_some() {
+            let common = self.base.gas.is_some() && self.base.nonce.is_some();
+            let eip1559 =
+                self.base.max_fee_per_gas.is_some() && self.base.max_priority_fee_per_gas.is_some();
+            // TODO: Should check gas per pubdata?
+            return common && eip1559;
+        }
+
         TransactionBuilder::can_build(&self.base)
     }
 
     fn output_tx_type(&self) -> <Zksync as Network>::TxType {
+        if self.eip_712_meta.is_some() {
+            return TxType::Eip712;
+        }
+
         TransactionBuilder::output_tx_type(&self.base).into()
     }
 
     fn output_tx_type_checked(&self) -> Option<<Zksync as Network>::TxType> {
+        if self.eip_712_meta.is_some() {
+            if !self.can_build() {
+                return None;
+            }
+            return Some(TxType::Eip712);
+        }
+
         TransactionBuilder::output_tx_type_checked(&self.base).map(Into::into)
     }
 
     fn prep_for_submission(&mut self) {
+        if self.eip_712_meta.is_some() {
+            self.base.transaction_type = Some(TxType::Eip712 as u8);
+            self.base.gas_price = None;
+            self.base.blob_versioned_hashes = None;
+            self.base.sidecar = None;
+        }
+
         TransactionBuilder::prep_for_submission(&mut self.base)
     }
 
@@ -184,7 +231,36 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
     ) -> alloy_network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Zksync> {
         // TODO: Support era-specific
         if self.eip_712_meta.is_some() {
-            todo!("Era-specific transactions are not supported yet");
+            let mut missing = Vec::new();
+            // TODO: Copy-paste, can be avoided?
+            if self.base.max_fee_per_gas.is_none() {
+                missing.push("max_fee_per_gas");
+            }
+            if self.base.max_priority_fee_per_gas.is_none() {
+                missing.push("max_priority_fee_per_gas");
+            }
+            if !missing.is_empty() {
+                return Err(TransactionBuilderError::InvalidTransactionRequest(
+                    TxType::Eip712,
+                    missing,
+                )
+                .into_unbuilt(self));
+            }
+
+            // TODO: Are unwraps safe?
+            let tx = TxEip712 {
+                chain_id: self.base.chain_id.unwrap(),
+                nonce: U256::from(self.base.nonce.unwrap()), // TODO: Deployment nonce?
+                gas_limit: self.base.gas.unwrap(),
+                max_fee_per_gas: self.base.max_fee_per_gas.unwrap(),
+                max_priority_fee_per_gas: self.base.max_priority_fee_per_gas.unwrap(),
+                eip712_meta: self.eip_712_meta.unwrap(),
+                from: self.base.from.unwrap(),
+                to: self.base.to.unwrap(),
+                value: self.base.value.unwrap_or_default(),
+                input: self.base.input.into_input().unwrap_or_default(),
+            };
+            return Ok(crate::network::unsigned_tx::TypedTransaction::Eip712(tx));
         }
 
         use TransactionBuilderError::*;

@@ -38,7 +38,8 @@ async fn main() -> Result<()> {
     // The `from` field is automatically filled to the first signer's address (Alice).
     let tx = TransactionRequest::default()
         .with_to(address!("d8dA6BF26964aF9D7eEd9e03E53415D37aA96045"))
-        .with_value(U256::from(100));
+        .with_value(U256::from(100))
+        .with_gas_per_pubdata(U256::from(1_000_000));
 
     // Send the transaction and wait for inclusion.
     let receipt = provider.send_transaction(tx).await?.get_receipt().await?;

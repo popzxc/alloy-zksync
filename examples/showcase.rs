@@ -9,6 +9,7 @@ use alloy::{
 use alloy_zksync::{
     network::{transaction_request::TransactionRequest, Zksync},
     node_bindings::EraTestNode,
+    provider::ZksyncProvider,
     wallet::ZksyncWallet,
 };
 
@@ -42,6 +43,9 @@ async fn main() -> Result<()> {
     let receipt = provider.send_transaction(tx).await?.get_receipt().await?;
 
     println!("Got receipt: {receipt:#?}");
+
+    let l1_chain_id = provider.get_l1_chain_id().await?;
+    println!("L1 chain ID is: {l1_chain_id}");
 
     Ok(())
 }

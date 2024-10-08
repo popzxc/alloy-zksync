@@ -5,7 +5,7 @@
 - [x] Zksync network definition
 - [x] Example of sending tx to era test node via era binding
 - [x] Eip712 tx
-- [ ] API extensions (`zks` namespace)
+- [in progress] API extensions (`zks` namespace)
 - [ ] L1->L2 txs (deposits)
 - [ ] L2->L1 txs (withdrawals)
 - [ ] Mirrored crate structure

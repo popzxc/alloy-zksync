@@ -1,8 +1,8 @@
-use alloy_consensus::{SignableTransaction, Signed, Transaction};
-use alloy_primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
-use alloy_rlp::{BufMut, Decodable, Encodable, Header};
-use alloy_rpc_types_eth::TransactionInput;
-use alloy_signer::Signature;
+use alloy::consensus::{SignableTransaction, Signed, Transaction};
+use alloy::primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
+use alloy::rlp::{BufMut, Decodable, Encodable, Header};
+use alloy::rpc::types::TransactionInput;
+use alloy::signers::Signature;
 use serde::{Deserialize, Serialize};
 
 use crate::network::tx_type::TxType;
@@ -26,7 +26,7 @@ mod utils;
 )]
 pub struct TxEip712 {
     /// EIP-155: Simple replay attack protection
-    #[serde(with = "alloy_serde::quantity")]
+    #[serde(with = "alloy::serde::quantity")]
     pub chain_id: ChainId,
     /// A scalar value equal to the number of transactions sent by the sender; formally Tn.
     // TODO: Explain composite nonce?
@@ -36,8 +36,8 @@ pub struct TxEip712 {
     /// this transaction. This is paid up-front, before any
     /// computation is done and may not be increased
     /// later; formally Tg.
-    #[serde(with = "alloy_serde::quantity")]
-    pub gas_limit: u128,
+    #[serde(with = "alloy::serde::quantity")]
+    pub gas_limit: u64,
     /// A scalar value equal to the maximum
     /// amount of gas that should be used in executing
     /// this transaction. This is paid up-front, before any
@@ -49,7 +49,7 @@ pub struct TxEip712 {
     /// 340282366920938463463374607431768211455
     ///
     /// This is also known as `GasFeeCap`
-    #[serde(with = "alloy_serde::quantity")]
+    #[serde(with = "alloy::serde::quantity")]
     pub max_fee_per_gas: u128,
     /// Max Priority fee that transaction is paying
     ///
@@ -58,7 +58,7 @@ pub struct TxEip712 {
     /// 340282366920938463463374607431768211455
     ///
     /// This is also known as `GasTipCap`
-    #[serde(with = "alloy_serde::quantity")]
+    #[serde(with = "alloy::serde::quantity")]
     pub max_priority_fee_per_gas: u128, // TODO: Should be option
     /// The 160-bit address of the message call’s recipient or, for a contract creation
     /// transaction, ∅, used here to denote the only member of B0 ; formally Tt.
@@ -133,10 +133,10 @@ impl TxEip712 {
     ///
     /// This __does__ expect the bytes to start with a list header and include a signature.
     #[doc(hidden)]
-    pub fn decode_signed_fields(buf: &mut &[u8]) -> alloy_rlp::Result<Signed<Self>> {
+    pub fn decode_signed_fields(buf: &mut &[u8]) -> alloy::rlp::Result<Signed<Self>> {
         let header = Header::decode(buf)?;
         if !header.list {
-            return Err(alloy_rlp::Error::UnexpectedString);
+            return Err(alloy::rlp::Error::UnexpectedString);
         }
 
         // record original length so we can check encoding
@@ -171,7 +171,7 @@ impl TxEip712 {
         let signed = tx.into_signed(signature);
 
         if buf.len() + header.payload_length != original_len {
-            return Err(alloy_rlp::Error::ListLengthMismatch {
+            return Err(alloy::rlp::Error::ListLengthMismatch {
                 expected: header.payload_length,
                 got: original_len - buf.len(),
             });
@@ -248,7 +248,7 @@ impl Transaction for TxEip712 {
         (self.nonce % U256::from(u64::MAX)).try_into().unwrap()
     }
 
-    fn gas_limit(&self) -> u128 {
+    fn gas_limit(&self) -> u64 {
         self.gas_limit
     }
 
@@ -267,6 +267,38 @@ impl Transaction for TxEip712 {
     fn input(&self) -> &[u8] {
         &self.input
     }
+
+    fn max_fee_per_gas(&self) -> u128 {
+        self.max_fee_per_gas
+    }
+
+    fn max_priority_fee_per_gas(&self) -> Option<u128> {
+        Some(self.max_priority_fee_per_gas)
+    }
+
+    fn max_fee_per_blob_gas(&self) -> Option<u128> {
+        None
+    }
+
+    fn priority_fee_or_price(&self) -> u128 {
+        todo!()
+    }
+
+    fn ty(&self) -> u8 {
+        self.tx_type() as u8
+    }
+
+    fn access_list(&self) -> Option<&alloy::rpc::types::AccessList> {
+        None
+    }
+
+    fn blob_versioned_hashes(&self) -> Option<&[alloy::primitives::B256]> {
+        None
+    }
+
+    fn authorization_list(&self) -> Option<&[alloy::eips::eip7702::SignedAuthorization]> {
+        None
+    }
 }
 
 // Context: Encodable/Decodable assume that there is no signature in the transaction
@@ -275,7 +307,7 @@ impl SignableTransaction<Signature> for TxEip712 {
         self.chain_id = chain_id;
     }
 
-    fn encode_for_signing(&self, out: &mut dyn alloy_rlp::BufMut) {
+    fn encode_for_signing(&self, out: &mut dyn alloy::rlp::BufMut) {
         // Reimplementation of `SolStruct::eip712_signing_hash`
         out.put_u8(0x19);
         out.put_u8(0x01);
@@ -326,12 +358,12 @@ impl SignableTransaction<Signature> for TxEip712 {
 // }
 
 // impl Decodable for TxEip712 {
-//     fn decode(data: &mut &[u8]) -> alloy_rlp::Result<Self> {
+//     fn decode(data: &mut &[u8]) -> alloy::rlp::Result<Self> {
 //         let header = Header::decode(data)?;
 //         let remaining_len = data.len();
 
 //         if header.payload_length > remaining_len {
-//             return Err(alloy_rlp::Error::InputTooShort);
+//             return Err(alloy::rlp::Error::InputTooShort);
 //         }
 
 //         println!("decode fields");
@@ -339,7 +371,7 @@ impl SignableTransaction<Signature> for TxEip712 {
 //     }
 // }
 
-impl From<TxEip712> for alloy_rpc_types_eth::transaction::TransactionRequest {
+impl From<TxEip712> for alloy::rpc::types::transaction::TransactionRequest {
     fn from(tx: TxEip712) -> Self {
         Self {
             transaction_type: Some(tx.tx_type() as u8),
@@ -357,6 +389,7 @@ impl From<TxEip712> for alloy_rpc_types_eth::transaction::TransactionRequest {
             max_fee_per_blob_gas: None,
             gas_price: None,
             sidecar: None,
+            authorization_list: None,
         }
     }
 }
@@ -368,8 +401,8 @@ mod tests {
     use crate::network::unsigned_tx::eip712::Eip712Meta;
 
     use super::TxEip712;
-    use alloy_consensus::SignableTransaction;
-    use alloy_primitives::{hex, Address, FixedBytes, Signature, B256, U256};
+    use alloy::consensus::SignableTransaction;
+    use alloy::primitives::{hex, Address, FixedBytes, Signature, B256, U256};
 
     #[test]
     fn decode_eip712_tx() {

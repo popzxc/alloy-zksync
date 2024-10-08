@@ -1,6 +1,9 @@
 use super::{utils::hash_bytecode, TxEip712};
-use alloy_primitives::{Address, FixedBytes, U256};
-use alloy_sol_types::{eip712_domain, sol, Eip712Domain, SolStruct};
+use alloy::primitives::{Address, FixedBytes, U256};
+use alloy::{
+    sol,
+    sol_types::{eip712_domain, Eip712Domain, SolStruct},
+};
 
 impl TxEip712 {
     fn as_sol_tx(&self) -> Transaction {

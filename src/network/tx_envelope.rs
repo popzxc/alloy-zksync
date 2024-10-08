@@ -1,12 +1,12 @@
-use alloy_consensus::Signed;
-use alloy_network::eip2718::{Decodable2718, Encodable2718};
-use alloy_rlp::Header;
+use alloy::consensus::Signed;
+use alloy::network::eip2718::{Decodable2718, Encodable2718};
+use alloy::rlp::Header;
 
 use super::unsigned_tx::eip712::TxEip712;
 
 #[derive(Debug)]
 pub enum TxEnvelope {
-    Native(alloy_consensus::TxEnvelope),
+    Native(alloy::consensus::TxEnvelope),
     Eip712(Signed<TxEip712>),
 }
 
@@ -33,7 +33,7 @@ impl Encodable2718 for TxEnvelope {
         }
     }
 
-    fn encode_2718(&self, out: &mut dyn alloy_primitives::bytes::BufMut) {
+    fn encode_2718(&self, out: &mut dyn alloy::primitives::bytes::BufMut) {
         match self {
             Self::Native(inner) => inner.encode_2718(out),
             Self::Eip712(tx) => {
@@ -44,13 +44,13 @@ impl Encodable2718 for TxEnvelope {
 }
 
 impl Decodable2718 for TxEnvelope {
-    fn typed_decode(ty: u8, buf: &mut &[u8]) -> alloy_network::eip2718::Eip2718Result<Self> {
-        let inner = alloy_consensus::TxEnvelope::typed_decode(ty, buf)?;
+    fn typed_decode(ty: u8, buf: &mut &[u8]) -> alloy::network::eip2718::Eip2718Result<Self> {
+        let inner = alloy::consensus::TxEnvelope::typed_decode(ty, buf)?;
         Ok(Self::Native(inner))
     }
 
-    fn fallback_decode(buf: &mut &[u8]) -> alloy_network::eip2718::Eip2718Result<Self> {
-        let inner = alloy_consensus::TxEnvelope::fallback_decode(buf)?;
+    fn fallback_decode(buf: &mut &[u8]) -> alloy::network::eip2718::Eip2718Result<Self> {
+        let inner = alloy::consensus::TxEnvelope::fallback_decode(buf)?;
         Ok(Self::Native(inner))
     }
 }

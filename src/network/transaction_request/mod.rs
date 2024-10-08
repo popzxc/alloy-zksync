@@ -1,7 +1,7 @@
-use alloy_network::{
+use alloy::network::{
     Network, TransactionBuilder, TransactionBuilderError, UnbuiltTransactionError,
 };
-use alloy_primitives::U256;
+use alloy::primitives::U256;
 
 use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 
@@ -10,7 +10,7 @@ use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TransactionRequest {
     #[serde(flatten)]
-    base: alloy_rpc_types_eth::transaction::TransactionRequest,
+    base: alloy::rpc::types::transaction::TransactionRequest,
     #[serde(skip_serializing_if = "Option::is_none")]
     eip_712_meta: Option<Eip712Meta>,
 }
@@ -58,11 +58,11 @@ impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
 // TODO: transactionbuilder for other networks
 
 impl TransactionBuilder<Zksync> for TransactionRequest {
-    fn chain_id(&self) -> Option<alloy_primitives::ChainId> {
+    fn chain_id(&self) -> Option<alloy::primitives::ChainId> {
         TransactionBuilder::chain_id(&self.base)
     }
 
-    fn set_chain_id(&mut self, chain_id: alloy_primitives::ChainId) {
+    fn set_chain_id(&mut self, chain_id: alloy::primitives::ChainId) {
         TransactionBuilder::set_chain_id(&mut self.base, chain_id)
     }
 
@@ -74,23 +74,23 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         TransactionBuilder::set_nonce(&mut self.base, nonce)
     }
 
-    fn input(&self) -> Option<&alloy_primitives::Bytes> {
+    fn input(&self) -> Option<&alloy::primitives::Bytes> {
         TransactionBuilder::input(&self.base)
     }
 
-    fn set_input<T: Into<alloy_primitives::Bytes>>(&mut self, input: T) {
+    fn set_input<T: Into<alloy::primitives::Bytes>>(&mut self, input: T) {
         TransactionBuilder::set_input(&mut self.base, input.into())
     }
 
-    fn from(&self) -> Option<alloy_primitives::Address> {
+    fn from(&self) -> Option<alloy::primitives::Address> {
         TransactionBuilder::from(&self.base)
     }
 
-    fn set_from(&mut self, from: alloy_primitives::Address) {
+    fn set_from(&mut self, from: alloy::primitives::Address) {
         TransactionBuilder::set_from(&mut self.base, from)
     }
 
-    fn kind(&self) -> Option<alloy_primitives::TxKind> {
+    fn kind(&self) -> Option<alloy::primitives::TxKind> {
         TransactionBuilder::kind(&self.base)
     }
 
@@ -98,15 +98,15 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         TransactionBuilder::clear_kind(&mut self.base)
     }
 
-    fn set_kind(&mut self, kind: alloy_primitives::TxKind) {
+    fn set_kind(&mut self, kind: alloy::primitives::TxKind) {
         TransactionBuilder::set_kind(&mut self.base, kind)
     }
 
-    fn value(&self) -> Option<alloy_primitives::U256> {
+    fn value(&self) -> Option<alloy::primitives::U256> {
         TransactionBuilder::value(&self.base)
     }
 
-    fn set_value(&mut self, value: alloy_primitives::U256) {
+    fn set_value(&mut self, value: alloy::primitives::U256) {
         TransactionBuilder::set_value(&mut self.base, value)
     }
 
@@ -134,36 +134,20 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         TransactionBuilder::set_max_priority_fee_per_gas(&mut self.base, max_priority_fee_per_gas)
     }
 
-    fn max_fee_per_blob_gas(&self) -> Option<u128> {
-        TransactionBuilder::max_fee_per_blob_gas(&self.base)
-    }
-
-    fn set_max_fee_per_blob_gas(&mut self, max_fee_per_blob_gas: u128) {
-        TransactionBuilder::set_max_fee_per_blob_gas(&mut self.base, max_fee_per_blob_gas)
-    }
-
-    fn gas_limit(&self) -> Option<u128> {
+    fn gas_limit(&self) -> Option<u64> {
         TransactionBuilder::gas_limit(&self.base)
     }
 
-    fn set_gas_limit(&mut self, gas_limit: u128) {
+    fn set_gas_limit(&mut self, gas_limit: u64) {
         TransactionBuilder::set_gas_limit(&mut self.base, gas_limit)
     }
 
-    fn access_list(&self) -> Option<&alloy_rpc_types_eth::AccessList> {
+    fn access_list(&self) -> Option<&alloy::rpc::types::AccessList> {
         TransactionBuilder::access_list(&self.base)
     }
 
-    fn set_access_list(&mut self, access_list: alloy_rpc_types_eth::AccessList) {
+    fn set_access_list(&mut self, access_list: alloy::rpc::types::AccessList) {
         TransactionBuilder::set_access_list(&mut self.base, access_list)
-    }
-
-    fn blob_sidecar(&self) -> Option<&alloy_rpc_types_eth::BlobTransactionSidecar> {
-        TransactionBuilder::blob_sidecar(&self.base)
-    }
-
-    fn set_blob_sidecar(&mut self, sidecar: alloy_rpc_types_eth::BlobTransactionSidecar) {
-        TransactionBuilder::set_blob_sidecar(&mut self.base, sidecar)
     }
 
     fn complete_type(&self, ty: <Zksync as Network>::TxType) -> Result<(), Vec<&'static str>> {
@@ -171,7 +155,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         match ty {
             TxType::Eip712 => {
                 // TODO: Should check gas per pubdata?
-                TransactionBuilder::complete_type(&self.base, alloy_consensus::TxType::Eip1559)
+                TransactionBuilder::complete_type(&self.base, alloy::consensus::TxType::Eip1559)
             }
             _ if ty.as_eth_type().is_some() => {
                 TransactionBuilder::complete_type(&self.base, ty.as_eth_type().unwrap())
@@ -228,7 +212,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
 
     fn build_unsigned(
         self,
-    ) -> alloy_network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Zksync> {
+    ) -> alloy::network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Zksync> {
         // TODO: Support era-specific
         if self.eip_712_meta.is_some() {
             let mut missing = Vec::new();
@@ -292,7 +276,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         }
     }
 
-    async fn build<W: alloy_network::NetworkWallet<Zksync>>(
+    async fn build<W: alloy::network::NetworkWallet<Zksync>>(
         self,
         wallet: &W,
     ) -> Result<<Zksync as Network>::TxEnvelope, TransactionBuilderError<Zksync>> {

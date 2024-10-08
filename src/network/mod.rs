@@ -1,5 +1,5 @@
-// use alloy_network::Ethereum;
-use alloy_network::Network;
+// use alloy::network::Ethereum;
+use alloy::network::Network;
 
 pub mod header;
 pub mod header_response;
@@ -34,4 +34,6 @@ impl Network for Zksync {
     type ReceiptResponse = self::receipt_response::ReceiptResponse;
 
     type HeaderResponse = self::header_response::HeaderResponse;
+
+    type BlockResponse = alloy::rpc::types::Block<Self::TransactionResponse, Self::HeaderResponse>;
 }

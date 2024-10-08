@@ -4,7 +4,7 @@ pub mod eip712;
 
 #[derive(Debug)]
 pub enum TypedTransaction {
-    Native(alloy_consensus::TypedTransaction),
+    Native(alloy::consensus::TypedTransaction),
     Eip712(TxEip712),
 }
 

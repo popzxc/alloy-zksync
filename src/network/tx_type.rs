@@ -1,6 +1,6 @@
 use std::fmt;
 
-use alloy_network::eip2718::Eip2718Error;
+use alloy::network::eip2718::Eip2718Error;
 
 /// Transaction types supported by the Era network.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -20,19 +20,19 @@ pub enum TxType {
 }
 
 impl TxType {
-    pub fn as_eth_type(self) -> Option<alloy_consensus::TxType> {
+    pub fn as_eth_type(self) -> Option<alloy::consensus::TxType> {
         Some(match self {
-            TxType::Legacy => alloy_consensus::TxType::Legacy,
-            TxType::Eip2930 => alloy_consensus::TxType::Eip2930,
-            TxType::Eip1559 => alloy_consensus::TxType::Eip1559,
-            TxType::Eip4844 => alloy_consensus::TxType::Eip4844,
+            TxType::Legacy => alloy::consensus::TxType::Legacy,
+            TxType::Eip2930 => alloy::consensus::TxType::Eip2930,
+            TxType::Eip1559 => alloy::consensus::TxType::Eip1559,
+            TxType::Eip4844 => alloy::consensus::TxType::Eip4844,
             TxType::Eip712 => return None,
         })
     }
 }
 
-impl From<alloy_consensus::TxType> for TxType {
-    fn from(value: alloy_consensus::TxType) -> Self {
+impl From<alloy::consensus::TxType> for TxType {
+    fn from(value: alloy::consensus::TxType) -> Self {
         let raw_value = value as u8;
         Self::try_from(raw_value).expect("Era supports all Eth tx types")
     }

@@ -1,5 +1,5 @@
-use alloy_primitives::{Address, Bytes, FixedBytes, U256};
-use alloy_rlp::{Decodable, Encodable, Header};
+use alloy::primitives::{Address, Bytes, FixedBytes, U256};
+use alloy::rlp::{Decodable, Encodable, Header};
 use serde::{Deserialize, Serialize};
 
 use super::utils::{hash_bytecode, BytecodeHashError};
@@ -28,8 +28,8 @@ impl Eip712Meta {
 }
 
 impl Decodable for Eip712Meta {
-    fn decode(buf: &mut &[u8]) -> alloy_rlp::Result<Self> {
-        fn opt_decode<T: Decodable>(buf: &mut &[u8]) -> alloy_rlp::Result<Option<T>> {
+    fn decode(buf: &mut &[u8]) -> alloy::rlp::Result<Self> {
+        fn opt_decode<T: Decodable>(buf: &mut &[u8]) -> alloy::rlp::Result<Option<T>> {
             Ok(Decodable::decode(buf).ok()) // TODO: better validation of error?
         }
 
@@ -48,8 +48,8 @@ impl Decodable for Eip712Meta {
 }
 
 impl Encodable for Eip712Meta {
-    fn encode(&self, out: &mut dyn alloy_rlp::BufMut) {
-        fn opt_encode<T>(stream: &mut dyn alloy_rlp::BufMut, value: Option<T>)
+    fn encode(&self, out: &mut dyn alloy::rlp::BufMut) {
+        fn opt_encode<T>(stream: &mut dyn alloy::rlp::BufMut, value: Option<T>)
         where
             T: Encodable,
         {
@@ -76,7 +76,7 @@ pub struct PaymasterParams {
 }
 
 impl Decodable for PaymasterParams {
-    fn decode(buf: &mut &[u8]) -> alloy_rlp::Result<Self> {
+    fn decode(buf: &mut &[u8]) -> alloy::rlp::Result<Self> {
         let mut bytes = Header::decode_bytes(buf, true)?;
         let payload_view = &mut bytes;
         Ok(Self {
@@ -87,7 +87,7 @@ impl Decodable for PaymasterParams {
 }
 
 impl Encodable for PaymasterParams {
-    fn encode(&self, out: &mut dyn alloy_rlp::BufMut) {
+    fn encode(&self, out: &mut dyn alloy::rlp::BufMut) {
         self.paymaster.encode(out);
         self.paymaster_input.encode(out);
     }

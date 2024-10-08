@@ -1,4 +1,4 @@
-use alloy_rpc_types_eth::AnyTransactionReceipt;
+use alloy::rpc::types::AnyTransactionReceipt;
 
 pub type ReceiptResponse = AnyTransactionReceipt;
 
@@ -7,23 +7,23 @@ pub type ReceiptResponse = AnyTransactionReceipt;
 // #[derive(Debug, Serialize, Deserialize)]
 // pub struct ReceiptResponse<T = ReceiptEnvelope<Log>> {
 //     #[serde(flatten)]
-//     inner: alloy_rpc_types_eth::TransactionReceipt<T>,
+//     inner: alloy::rpc_types_eth::TransactionReceipt<T>,
 // }
 
-// impl<T> alloy_network::ReceiptResponse for ReceiptResponse<T> {
-//     fn contract_address(&self) -> Option<alloy_primitives::Address> {
-//         alloy_network::ReceiptResponse::contract_address(&self.inner)
+// impl<T> alloy::network::ReceiptResponse for ReceiptResponse<T> {
+//     fn contract_address(&self) -> Option<alloy::primitives::Address> {
+//         alloy::network::ReceiptResponse::contract_address(&self.inner)
 //     }
 
 //     fn status(&self) -> bool {
-//         alloy_network::ReceiptResponse::status(&self.inner)
+//         alloy::network::ReceiptResponse::status(&self.inner)
 //     }
 
-//     fn block_hash(&self) -> Option<alloy_primitives::BlockHash> {
-//         alloy_network::ReceiptResponse::block_hash(&self.inner)
+//     fn block_hash(&self) -> Option<alloy::primitives::BlockHash> {
+//         alloy::network::ReceiptResponse::block_hash(&self.inner)
 //     }
 
 //     fn block_number(&self) -> Option<u64> {
-//         alloy_network::ReceiptResponse::block_number(&self.inner)
+//         alloy::network::ReceiptResponse::block_number(&self.inner)
 //     }
 // }

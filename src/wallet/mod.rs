@@ -1,10 +1,10 @@
-use alloy_consensus::SignableTransaction;
-use alloy_network::{Network, NetworkWallet, TxSigner};
-use alloy_primitives::Address;
+use alloy::consensus::SignableTransaction;
+use alloy::network::{Network, NetworkWallet, TxSigner};
+use alloy::primitives::Address;
 
 use crate::network::{tx_envelope::TxEnvelope, unsigned_tx::TypedTransaction, Zksync};
 
-use alloy_signer::Signature;
+use alloy::signers::Signature;
 use async_trait::async_trait;
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -48,7 +48,7 @@ impl ZksyncWallet {
     /// [`TransactionRequest`] and [`TypedTransaction`] object that specify the
     /// signer's address in the `from` field.
     ///
-    /// [`TransactionRequest`]: alloy_rpc_types_eth::TransactionRequest
+    /// [`TransactionRequest`]: alloy::rpc_types_eth::TransactionRequest
     pub fn register_signer<S>(&mut self, signer: S)
     where
         S: TxSigner<Signature> + Send + Sync + 'static,
@@ -61,7 +61,7 @@ impl ZksyncWallet {
     /// [`TypedTransaction`] objects that do not specify a signer address in the
     /// `from` field.
     ///
-    /// [`TransactionRequest`]: alloy_rpc_types_eth::TransactionRequest
+    /// [`TransactionRequest`]: alloy::rpc_types_eth::TransactionRequest
     pub fn register_default_signer<S>(&mut self, signer: S)
     where
         S: TxSigner<Signature> + Send + Sync + 'static,
@@ -91,23 +91,21 @@ impl ZksyncWallet {
         &self,
         sender: Address,
         tx: &mut dyn SignableTransaction<Signature>,
-    ) -> alloy_signer::Result<Signature> {
+    ) -> alloy::signers::Result<Signature> {
         self.signer_by_address(sender)
             .ok_or_else(|| {
-                alloy_signer::Error::other(format!("Missing signing credential for {}", sender))
+                alloy::signers::Error::other(format!("Missing signing credential for {}", sender))
             })?
             .sign_transaction(tx)
             .await
     }
 }
 
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl<N> NetworkWallet<N> for ZksyncWallet
 where
     N: Network<
-        UnsignedTx = alloy_consensus::TypedTransaction,
-        TxEnvelope = alloy_consensus::TxEnvelope,
+        UnsignedTx = alloy::consensus::TypedTransaction,
+        TxEnvelope = alloy::consensus::TxEnvelope,
     >,
 {
     fn default_signer_address(&self) -> Address {
@@ -126,22 +124,26 @@ where
     async fn sign_transaction_from(
         &self,
         sender: Address,
-        tx: alloy_consensus::TypedTransaction,
-    ) -> alloy_signer::Result<alloy_consensus::TxEnvelope> {
+        tx: alloy::consensus::TypedTransaction,
+    ) -> alloy::signers::Result<alloy::consensus::TxEnvelope> {
         match tx {
-            alloy_consensus::TypedTransaction::Legacy(mut t) => {
+            alloy::consensus::TypedTransaction::Legacy(mut t) => {
                 let sig = self.sign_transaction_inner(sender, &mut t).await?;
                 Ok(t.into_signed(sig).into())
             }
-            alloy_consensus::TypedTransaction::Eip2930(mut t) => {
+            alloy::consensus::TypedTransaction::Eip2930(mut t) => {
                 let sig = self.sign_transaction_inner(sender, &mut t).await?;
                 Ok(t.into_signed(sig).into())
             }
-            alloy_consensus::TypedTransaction::Eip1559(mut t) => {
+            alloy::consensus::TypedTransaction::Eip1559(mut t) => {
                 let sig = self.sign_transaction_inner(sender, &mut t).await?;
                 Ok(t.into_signed(sig).into())
             }
-            alloy_consensus::TypedTransaction::Eip4844(mut t) => {
+            alloy::consensus::TypedTransaction::Eip4844(mut t) => {
+                let sig = self.sign_transaction_inner(sender, &mut t).await?;
+                Ok(t.into_signed(sig).into())
+            }
+            alloy::consensus::TypedTransaction::Eip7702(mut t) => {
                 let sig = self.sign_transaction_inner(sender, &mut t).await?;
                 Ok(t.into_signed(sig).into())
             }
@@ -149,8 +151,6 @@ where
     }
 }
 
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl NetworkWallet<Zksync> for ZksyncWallet {
     fn default_signer_address(&self) -> Address {
         self.default
@@ -169,10 +169,10 @@ impl NetworkWallet<Zksync> for ZksyncWallet {
         &self,
         sender: Address,
         tx: TypedTransaction,
-    ) -> alloy_signer::Result<TxEnvelope> {
+    ) -> alloy::signers::Result<TxEnvelope> {
         match tx {
             TypedTransaction::Native(t) => {
-                let sig = <Self as NetworkWallet<alloy_network::Ethereum>>::sign_transaction_from(
+                let sig = <Self as NetworkWallet<alloy::network::Ethereum>>::sign_transaction_from(
                     self, sender, t,
                 )
                 .await?;

@@ -21,9 +21,6 @@ async fn main() -> Result<()> {
     let era_test_node = EraTestNode::new().try_spawn()?;
 
     // Set up signer from the first default era-test-node account (Alice).
-    // [RISK WARNING! Writing a private key in the code file is insecure behavior.]
-    // The following code is for testing only. Set up signer from private key, be aware of danger.
-    // let signer: PrivateKeySigner = "<PRIVATE_KEY>".parse().expect("should parse private key");
     let signer: PrivateKeySigner = era_test_node.keys()[0].clone().into();
     let wallet = ZksyncWallet::from(signer);
 

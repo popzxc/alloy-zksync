@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::network::tx_type::TxType;
 
 pub use self::meta::{Eip712Meta, PaymasterParams};
+pub use self::utils::{hash_bytecode, BytecodeHashError};
 
 mod meta;
 mod signing;
@@ -60,10 +61,11 @@ pub struct TxEip712 {
     /// This is also known as `GasTipCap`
     #[serde(with = "alloy::serde::quantity")]
     pub max_priority_fee_per_gas: u128, // TODO: Should be option
-    /// The 160-bit address of the message call’s recipient or, for a contract creation
-    /// transaction, ∅, used here to denote the only member of B0 ; formally Tt.
-    #[serde(default, skip_serializing_if = "TxKind::is_create")]
-    pub to: TxKind,
+    /// Address of the receiver of the message.
+    /// Unlike with other transactions, this field must be present.
+    /// In case of the contract deployment, the address should be set to the deployer system contract,
+    /// and the payload should contain ABI-encoded salt, contract bytecode hash, and constructor arguments.
+    pub to: Address,
     // TODO: document
     pub from: Address,
     /// A scalar value equal to the number of Wei to
@@ -257,7 +259,7 @@ impl Transaction for TxEip712 {
     }
 
     fn to(&self) -> TxKind {
-        self.to
+        self.to.into()
     }
 
     fn value(&self) -> U256 {
@@ -380,7 +382,7 @@ impl From<TxEip712> for alloy::rpc::types::transaction::TransactionRequest {
             gas: Some(tx.gas_limit),
             max_fee_per_gas: Some(tx.max_fee_per_gas),
             max_priority_fee_per_gas: Some(tx.max_priority_fee_per_gas),
-            to: Some(tx.to),
+            to: Some(tx.to.into()),
             from: Some(tx.from),
             value: Some(tx.value),
             input: TransactionInput::new(tx.input),
@@ -424,9 +426,7 @@ mod tests {
         let tx = TxEip712 {
             chain_id: 270,
             from: Address::from_str("0xe30f4fb40666753a7596d315f2f1f1d140d1508b").unwrap(),
-            to: Address::from_str("0x82112600a140ceaa9d7da373bb65453f7d99af4b")
-                .unwrap()
-                .into(),
+            to: Address::from_str("0x82112600a140ceaa9d7da373bb65453f7d99af4b").unwrap(),
             nonce: U256::from(1),
             value: U256::from(10),
             gas_limit: 12,

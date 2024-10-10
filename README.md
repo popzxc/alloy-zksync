@@ -14,10 +14,11 @@ This crate provides implementation of the ZKsync network support for the [alloy]
 - [x] Bindings for test node
 - [x] Zksync network definition
 - [x] Example of sending tx to era test node via era binding
-- [x] Eip712 tx
+- [x] Eip712 tx (works partially)
 - [in progress] API extensions (`zks` namespace)
 - [ ] L1->L2 txs (deposits)
 - [ ] L2->L1 txs (withdrawals)
+- [ ] Fillers
 - [ ] Mirrored crate structure
 - [ ] Mirrored features from upstream crates (e.g. serde)
 

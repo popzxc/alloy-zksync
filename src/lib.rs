@@ -6,6 +6,7 @@
 //! >
 //! > Functionality is lacking. Tests are lacking. PRs are appreciated.
 
+pub mod contracts;
 pub mod network;
 pub mod node_bindings;
 pub mod provider;

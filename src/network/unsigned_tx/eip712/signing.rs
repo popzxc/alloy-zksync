@@ -29,7 +29,7 @@ impl TxEip712 {
         Transaction {
             txType: U256::from(self.tx_type() as u8),
             from: address_to_u256(&self.from),
-            to: address_to_u256(self.to.to().unwrap_or(&Address::ZERO)),
+            to: address_to_u256(&self.to),
             gasLimit: U256::from(self.gas_limit),
             gasPerPubdataByteLimit: self.eip712_meta.gas_per_pubdata,
             maxFeePerGas: U256::from(self.max_fee_per_gas),

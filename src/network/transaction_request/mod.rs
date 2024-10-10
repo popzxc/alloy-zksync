@@ -1,10 +1,12 @@
 use alloy::network::{
     Network, TransactionBuilder, TransactionBuilderError, UnbuiltTransactionError,
 };
-use alloy::primitives::U256;
+use alloy::primitives::{TxKind, B256, U256};
 
+use crate::contracts::l2::contract_deployer::CONTRACT_DEPLOYER_ADDRESS;
 use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 
+use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError};
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
@@ -22,6 +24,47 @@ impl TransactionRequest {
             .get_or_insert_with(Eip712Meta::default)
             .gas_per_pubdata = gas_per_pubdata;
         self
+    }
+
+    pub fn zksync_deploy(
+        self,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        self.zksync_deploy_inner(None, code, constructor_data, factory_deps)
+    }
+
+    pub fn zksync_deploy_with_salt(
+        self,
+        salt: B256,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        self.zksync_deploy_inner(Some(salt), code, constructor_data, factory_deps)
+    }
+
+    fn zksync_deploy_inner(
+        mut self,
+        salt: Option<B256>,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        mut factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        let bytecode_hash = hash_bytecode(&code)?;
+        factory_deps.push(code);
+        self.base.to = Some(CONTRACT_DEPLOYER_ADDRESS.into());
+        self.base.input = crate::contracts::l2::contract_deployer::encode_create_calldata(
+            salt,
+            bytecode_hash.into(),
+            constructor_data.into(),
+        )
+        .into();
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .factory_deps = factory_deps.into_iter().map(Into::into).collect();
+        Ok(self)
     }
 }
 
@@ -213,6 +256,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
     fn build_unsigned(
         self,
     ) -> alloy::network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Zksync> {
+        println!("Build unsigned");
         // TODO: Support era-specific
         if self.eip_712_meta.is_some() {
             let mut missing = Vec::new();
@@ -223,6 +267,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
             if self.base.max_priority_fee_per_gas.is_none() {
                 missing.push("max_priority_fee_per_gas");
             }
+
             if !missing.is_empty() {
                 return Err(TransactionBuilderError::InvalidTransactionRequest(
                     TxType::Eip712,
@@ -230,6 +275,14 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
                 )
                 .into_unbuilt(self));
             }
+
+            let TxKind::Call(to) = self.base.to.unwrap_or_default() else {
+                return Err(TransactionBuilderError::InvalidTransactionRequest(
+                    TxType::Eip712,
+                    vec!["to (recipient) must be specified for EIP-712 transactions"],
+                )
+                .into_unbuilt(self));
+            };
 
             // TODO: Are unwraps safe?
             let tx = TxEip712 {
@@ -240,10 +293,11 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
                 max_priority_fee_per_gas: self.base.max_priority_fee_per_gas.unwrap(),
                 eip712_meta: self.eip_712_meta.unwrap(),
                 from: self.base.from.unwrap(),
-                to: self.base.to.unwrap(),
+                to,
                 value: self.base.value.unwrap_or_default(),
                 input: self.base.input.into_input().unwrap_or_default(),
             };
+            println!("EIP-712 transaction: {:#?}", tx);
             return Ok(crate::network::unsigned_tx::TypedTransaction::Eip712(tx));
         }
 
@@ -280,6 +334,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         self,
         wallet: &W,
     ) -> Result<<Zksync as Network>::TxEnvelope, TransactionBuilderError<Zksync>> {
+        println!("Build");
         Ok(wallet.sign_request(self).await?)
     }
 }

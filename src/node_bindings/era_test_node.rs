@@ -128,7 +128,7 @@ pub enum EraTestNodeError {
 /// # Example
 ///
 /// ```no_run
-/// use alloy::era::node_bindings::EraTestNode;
+/// use alloy_zksync::node_bindings::EraTestNode;
 ///
 /// let port = 8545u16;
 /// let url = format!("http://localhost:{}", port).to_string();
@@ -166,7 +166,7 @@ impl EraTestNode {
     /// # Example
     ///
     /// ```
-    /// # use alloy::era::node_bindings::EraTestNode;
+    /// # use alloy_zksync::node_bindings::EraTestNode;
     /// fn a() {
     ///  let era_test_node = EraTestNode::default().spawn();
     ///
@@ -186,7 +186,7 @@ impl EraTestNode {
     /// # Example
     ///
     /// ```no_run
-    /// # use alloy::era::node_bindings::EraTestNode;
+    /// # use alloy_zksync::node_bindings::EraTestNode;
     /// fn a() {
     ///  let era_test_node = EraTestNode::at("~/some/location/era_test_node").spawn();
     ///

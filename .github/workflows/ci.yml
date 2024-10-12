@@ -14,6 +14,9 @@ env:
   # Minimum supported Rust version.
   msrv: 1.79.0
 
+permissions:
+  contents: write
+
 jobs:
   build-msrv:
     runs-on: ubuntu-latest

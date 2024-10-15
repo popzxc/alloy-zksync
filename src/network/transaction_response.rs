@@ -69,8 +69,6 @@ impl alloy::consensus::Transaction for TransactionResponse {
 }
 
 impl alloy::network::TransactionResponse for TransactionResponse {
-    type Signature = alloy::rpc::types::Signature;
-
     fn tx_hash(&self) -> alloy::primitives::TxHash {
         self.inner.tx_hash()
     }
@@ -93,9 +91,5 @@ impl alloy::network::TransactionResponse for TransactionResponse {
 
     fn transaction_index(&self) -> Option<u64> {
         self.inner.transaction_index()
-    }
-
-    fn signature(&self) -> Option<Self::Signature> {
-        self.inner.signature()
     }
 }

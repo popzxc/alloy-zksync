@@ -66,6 +66,9 @@ jobs:
       - name: Run doc tests
         run: cargo test --all-features --doc
 
+      - name: Run showcase example
+        run: cargo run --example showcase
+
   document:
     needs:
       - test

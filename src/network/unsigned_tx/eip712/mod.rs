@@ -410,9 +410,8 @@ mod tests {
     fn decode_eip712_tx() {
         // Does not have type byte.
         let encoded = hex::decode("f8b701800b0c940754b07d1ea3071c3ec9bd86b2aa6f1a59a514980a8301020380a0635f9ee3a1523de15fc8b72a0eea12f5247c6b6e2369ed158274587af6496599a030f7c66d1ed24fca92527e6974b85b07ec30fdd5c2d41eae46966224add965f982010e9409a6aa96b9a17d7f7ba3e3b19811c082aba9f1e304e1a0020202020202020202020202020202020202020202020202020202020202020283010203d694000000000000000000000000000000000000000080").unwrap();
-        println!("222");
-        let tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
-        println!("Tx is {tx:#?}");
+        let _tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
+        // TODO: Add assertions.
     }
 
     #[test]

@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"alloy_zksync":[["impl IntoLogData for <a class=\"struct\" href=\"alloy_zksync/contracts/l2/contract_deployer/struct.ContractDeployed.html\" title=\"struct alloy_zksync::contracts::l2::contract_deployer::ContractDeployed\">ContractDeployed</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"alloy_zksync":[["impl Transaction for <a class=\"struct\" href=\"alloy_zksync/network/transaction_response/struct.TransactionResponse.html\" title=\"struct alloy_zksync::network::transaction_response::TransactionResponse\">TransactionResponse</a>"],["impl Transaction for <a class=\"struct\" href=\"alloy_zksync/network/unsigned_tx/eip712/struct.TxEip712.html\" title=\"struct alloy_zksync::network::unsigned_tx::eip712::TxEip712\">TxEip712</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

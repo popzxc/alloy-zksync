@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"alloy_zksync":[["impl Decodable for <a class=\"struct\" href=\"alloy_zksync/network/unsigned_tx/eip712/struct.Eip712Meta.html\" title=\"struct alloy_zksync::network::unsigned_tx::eip712::Eip712Meta\">Eip712Meta</a>"],["impl Decodable for <a class=\"struct\" href=\"alloy_zksync/network/unsigned_tx/eip712/struct.PaymasterParams.html\" title=\"struct alloy_zksync::network::unsigned_tx::eip712::PaymasterParams\">PaymasterParams</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["fillers"],"struct":["Eip712Fee"],"trait":["ZksyncProvider"]};

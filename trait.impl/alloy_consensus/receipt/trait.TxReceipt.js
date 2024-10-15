@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"alloy_zksync":[["impl&lt;T&gt; TxReceipt&lt;T&gt; for <a class=\"enum\" href=\"alloy_zksync/network/receipt_envelope/enum.ReceiptEnvelope.html\" title=\"enum alloy_zksync::network::receipt_envelope::ReceiptEnvelope\">ReceiptEnvelope</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

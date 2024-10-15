@@ -10,6 +10,7 @@ use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError};
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {
     #[serde(flatten)]
     base: alloy::rpc::types::transaction::TransactionRequest,
@@ -19,10 +20,18 @@ pub struct TransactionRequest {
 
 // TODO: Extension trait for `TransactionBuilder`?
 impl TransactionRequest {
-    pub fn with_gas_per_pubdata(mut self, gas_per_pubdata: U256) -> Self {
+    pub fn gas_per_pubdata(&self) -> Option<U256> {
+        self.eip_712_meta.as_ref().map(|meta| meta.gas_per_pubdata)
+    }
+
+    pub fn set_gas_per_pubdata(&mut self, gas_per_pubdata: U256) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .gas_per_pubdata = gas_per_pubdata;
+    }
+
+    pub fn with_gas_per_pubdata(mut self, gas_per_pubdata: U256) -> Self {
+        self.set_gas_per_pubdata(gas_per_pubdata);
         self
     }
 
@@ -52,6 +61,8 @@ impl TransactionRequest {
         constructor_data: Vec<u8>,
         mut factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
+        self.base.transaction_type = Some(TxType::Eip712 as u8);
+
         let bytecode_hash = hash_bytecode(&code)?;
         factory_deps.push(code);
         self.base.to = Some(CONTRACT_DEPLOYER_ADDRESS.into());
@@ -256,8 +267,6 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
     fn build_unsigned(
         self,
     ) -> alloy::network::BuildResult<crate::network::unsigned_tx::TypedTransaction, Zksync> {
-        println!("Build unsigned");
-        // TODO: Support era-specific
         if self.eip_712_meta.is_some() {
             let mut missing = Vec::new();
             // TODO: Copy-paste, can be avoided?
@@ -297,7 +306,6 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
                 value: self.base.value.unwrap_or_default(),
                 input: self.base.input.into_input().unwrap_or_default(),
             };
-            println!("EIP-712 transaction: {:#?}", tx);
             return Ok(crate::network::unsigned_tx::TypedTransaction::Eip712(tx));
         }
 
@@ -334,7 +342,6 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         self,
         wallet: &W,
     ) -> Result<<Zksync as Network>::TxEnvelope, TransactionBuilderError<Zksync>> {
-        println!("Build");
         Ok(wallet.sign_request(self).await?)
     }
 }

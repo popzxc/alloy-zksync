@@ -1,6 +1,6 @@
 use alloy::primitives::{Address, U256, U64};
 use alloy::providers::fillers::{ChainIdFiller, JoinFill, NonceFiller, RecommendedFillers};
-use alloy::providers::{Provider, ProviderCall};
+use alloy::providers::{Identity, Provider, ProviderBuilder, ProviderCall};
 use alloy::rpc::client::NoParams;
 use alloy::transports::{BoxTransport, Transport};
 use fillers::Eip712FeeFiller;
@@ -9,7 +9,11 @@ use serde::{Deserialize, Serialize};
 use crate::network::transaction_request::TransactionRequest;
 use crate::network::Zksync;
 
+pub use self::provider_builder_ext::ProviderBuilderExt;
+
 pub mod fillers;
+pub mod layers;
+mod provider_builder_ext;
 
 /// Response type for `zks_estimateFee`.
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -80,4 +84,9 @@ impl RecommendedFillers for Zksync {
             JoinFill::new(NonceFiller::default(), ChainIdFiller::default()),
         )
     }
+}
+
+/// Convenience function to initialize provider builder for ZKsync network.
+pub fn zksync_provider() -> ProviderBuilder<Identity, Identity, Zksync> {
+    ProviderBuilder::<Identity, Identity, Zksync>::default()
 }

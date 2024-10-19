@@ -117,6 +117,10 @@ pub enum EraTestNodeError {
     /// An error occurred while parsing a hex string.
     #[error(transparent)]
     FromHexError(#[from] hex::FromHexError),
+
+    /// No private keys were found.
+    #[error("no private keys found")]
+    NoKeysAvailable,
 }
 
 /// Builder for launching `era_test_node`.

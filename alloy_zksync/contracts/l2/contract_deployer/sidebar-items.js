@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CONTRACT_DEPLOYER_ADDRESS"],"struct":["ContractDeployed","createCall","createReturn"]};

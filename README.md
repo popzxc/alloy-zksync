@@ -1,12 +1,34 @@
 # alloy-zksync
 
-This crate provides implementation of the ZKsync network support for the [alloy](https://github.com/alloy-rs/alloy/) ecosystem.
+This crate provides implementation of the ZKsync network support for the [alloy](https://github.com/alloy-rs/alloy/)
+ecosystem.
 
 > [!WARNING]  
 > This crate is under heavy development and is not suitable for production use.
 > For now, it's being maintained as a personal pet project and not something maintained by Matter Labs.
 >
 > Functionality is lacking. Tests are lacking. PRs are appreciated.
+
+## Overview
+
+The main part of this crate is `Zksync` [network](https://docs.rs/alloy/latest/alloy/network/trait.Network.html)
+implementation, which makes it possible to use all of the `alloy` functionality in L1-compatible way.
+
+Where possible, all the technicalities (including, for example, signing EIP712 transactions) are hidden under the hood,
+so that interfaces remain unchanged. In some cases, it means that some magic happens under the hood (one example is
+that user doesn't have to manually specify the contract deployer address in deploy transactions).
+
+Where existing interfaces cannot be used (for example, adding factory dependencies to deployment, or specifying
+paymaster parameters),
+the functionality is added in a way that is aligned with overall `alloy` design, either as methods on the types
+specific to the `Zksync` network, or via extension traits (in case of `Provider`, for example).
+
+Similarly to `anvil` bindings, `alloy-zksync` provides bindings for
+[era-test-node](https://github.com/matter-labs/era-test-node).
+
+For usage, the best reference currently is [examples](./examples/):
+- [basic usage](./examples/showcase.rs),
+- [contract deployment and interaction](./examples/deploy.rs).
 
 ## Progress
 
@@ -18,10 +40,10 @@ This crate provides implementation of the ZKsync network support for the [alloy]
 - [in progress] API extensions (`zks` namespace)
 - [ ] L1->L2 txs (deposits)
 - [ ] L2->L1 txs (withdrawals)
-- [ ] Fillers
+- [x] Fillers
 - [ ] Mirrored crate structure
 - [ ] Mirrored features from upstream crates (e.g. serde)
-
+- [ ] Comprehensive documentation
 
 ## Acknowledgements
 

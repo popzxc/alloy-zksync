@@ -1,7 +1,7 @@
 use alloy::{
     providers::{
         fillers::{JoinFill, TxFiller, WalletFiller},
-        ProviderBuilder, ProviderLayer,
+        ProviderBuilder, ProviderLayer, RootProvider,
     },
     signers::local::LocalSigner,
 };
@@ -9,23 +9,20 @@ use alloy::{
 use crate::{
     network::Zksync,
     node_bindings::{EraTestNode, EraTestNodeError},
-    provider::layers::era_test_node::EraTestNodeLayer,
+    provider::layers::era_test_node::{EraTestNodeLayer, EraTestNodeProvider},
     wallet::ZksyncWallet,
 };
 
 type EraTestNodeProviderResult<T> = Result<T, EraTestNodeError>;
 type JoinedZksyncWalletFiller<F> = JoinFill<F, WalletFiller<ZksyncWallet>>;
+type ZksyncHttpTransport = alloy::transports::http::Http<reqwest::Client>;
 
 pub trait ProviderBuilderExt<L, F>: Sized
 where
-    F: TxFiller<Zksync>
-        + ProviderLayer<L::Provider, alloy::transports::http::Http<reqwest::Client>, Zksync>,
-    L: alloy::providers::ProviderLayer<
-        crate::provider::layers::era_test_node::EraTestNodeProvider<
-            alloy::providers::RootProvider<alloy::transports::http::Http<reqwest::Client>, Zksync>,
-            alloy::transports::http::Http<reqwest::Client>,
-        >,
-        alloy::transports::http::Http<reqwest::Client>,
+    F: TxFiller<Zksync> + ProviderLayer<L::Provider, ZksyncHttpTransport, Zksync>,
+    L: ProviderLayer<
+        EraTestNodeProvider<RootProvider<ZksyncHttpTransport, Zksync>, ZksyncHttpTransport>,
+        ZksyncHttpTransport,
         Zksync,
     >,
 {
@@ -35,7 +32,7 @@ where
         self,
     ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
         L::Provider,
-        alloy::transports::http::Http<reqwest::Client>,
+        ZksyncHttpTransport,
         Zksync,
     >>::Provider;
 
@@ -49,18 +46,17 @@ where
         f: impl FnOnce(EraTestNode) -> EraTestNode,
     ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
         L::Provider,
-        alloy::transports::http::Http<reqwest::Client>,
+        ZksyncHttpTransport,
         Zksync,
     >>::Provider;
 
-    #[allow(clippy::type_complexity)] // TODO: Should indeed be simplified, but rn it's ported from upstream code.
     fn try_on_era_test_node_with_wallet_and_config(
         self,
         f: impl FnOnce(EraTestNode) -> EraTestNode,
     ) -> EraTestNodeProviderResult<
         <JoinedZksyncWalletFiller<F> as ProviderLayer<
             L::Provider,
-            alloy::transports::http::Http<reqwest::Client>,
+            ZksyncHttpTransport,
             Zksync,
         >>::Provider,
     >;
@@ -68,14 +64,10 @@ where
 
 impl<L, F> ProviderBuilderExt<L, F> for ProviderBuilder<L, F, Zksync>
 where
-    F: TxFiller<Zksync>
-        + ProviderLayer<L::Provider, alloy::transports::http::Http<reqwest::Client>, Zksync>,
-    L: alloy::providers::ProviderLayer<
-        crate::provider::layers::era_test_node::EraTestNodeProvider<
-            alloy::providers::RootProvider<alloy::transports::http::Http<reqwest::Client>, Zksync>,
-            alloy::transports::http::Http<reqwest::Client>,
-        >,
-        alloy::transports::http::Http<reqwest::Client>,
+    F: TxFiller<Zksync> + ProviderLayer<L::Provider, ZksyncHttpTransport, Zksync>,
+    L: ProviderLayer<
+        EraTestNodeProvider<RootProvider<ZksyncHttpTransport, Zksync>, ZksyncHttpTransport>,
+        ZksyncHttpTransport,
         Zksync,
     >,
 {
@@ -87,9 +79,9 @@ where
         self,
     ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
         L::Provider,
-        alloy::transports::http::Http<reqwest::Client>,
+        ZksyncHttpTransport,
         Zksync,
-    >>::Provider {
+    >>::Provider{
         self.on_era_test_node_with_wallet_and_config(std::convert::identity)
     }
 
@@ -108,9 +100,9 @@ where
         f: impl FnOnce(EraTestNode) -> EraTestNode,
     ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
         L::Provider,
-        alloy::transports::http::Http<reqwest::Client>,
+        ZksyncHttpTransport,
         Zksync,
-    >>::Provider {
+    >>::Provider{
         self.try_on_era_test_node_with_wallet_and_config(f).unwrap()
     }
 
@@ -124,10 +116,10 @@ where
     ) -> EraTestNodeProviderResult<
         <JoinedZksyncWalletFiller<F> as ProviderLayer<
             L::Provider,
-            alloy::transports::http::Http<reqwest::Client>,
+            ZksyncHttpTransport,
             Zksync,
         >>::Provider,
-    > {
+    >{
         use alloy::signers::Signer;
 
         let era_test_node_layer = EraTestNodeLayer::from(f(Default::default()));

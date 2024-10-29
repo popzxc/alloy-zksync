@@ -16,6 +16,14 @@ fn serialize_bytes<S: serde::Serializer>(
     seq.end()
 }
 
+// Seralize 'Bytes' to encode them into RLP friendly format.
+fn serialize_bytes_custom<S: serde::Serializer>(
+    bytes: &Bytes,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    serializer.serialize_bytes(&bytes.0)
+}
+
 // TODO: The structure should be correct by construction, e.g. we should not allow
 // creating or deserializing meta that has invalid factory deps.
 // TODO: Serde here is used for `TransactionRequest` needs, this has to be reworked once
@@ -87,6 +95,8 @@ impl Encodable for Eip712Meta {
 #[serde(rename_all = "camelCase")]
 pub struct PaymasterParams {
     pub paymaster: Address,
+    /// A custom serialization is needed (otherwise RLP treats it as string).
+    #[serde(serialize_with = "serialize_bytes_custom")]
     pub paymaster_input: Bytes,
 }
 

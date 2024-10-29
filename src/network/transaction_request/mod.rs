@@ -6,7 +6,7 @@ use alloy::primitives::{TxKind, B256, U256};
 use crate::contracts::l2::contract_deployer::CONTRACT_DEPLOYER_ADDRESS;
 use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 
-use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError};
+use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError, PaymasterParams};
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
@@ -32,6 +32,17 @@ impl TransactionRequest {
 
     pub fn with_gas_per_pubdata(mut self, gas_per_pubdata: U256) -> Self {
         self.set_gas_per_pubdata(gas_per_pubdata);
+        self
+    }
+
+    pub fn set_paymaster(&mut self, paymaster_params: PaymasterParams) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .paymaster_params = Some(paymaster_params);
+    }
+
+    pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
+        self.set_paymaster(paymaster_params);
         self
     }
 
@@ -254,14 +265,15 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
     }
 
     fn prep_for_submission(&mut self) {
+        // This has to go first, as it overwrites the transaction type.
+        TransactionBuilder::prep_for_submission(&mut self.base);
+
         if self.eip_712_meta.is_some() {
             self.base.transaction_type = Some(TxType::Eip712 as u8);
             self.base.gas_price = None;
             self.base.blob_versioned_hashes = None;
             self.base.sidecar = None;
         }
-
-        TransactionBuilder::prep_for_submission(&mut self.base)
     }
 
     fn build_unsigned(

@@ -113,9 +113,13 @@ impl Decodable for PaymasterParams {
 
 impl Encodable for PaymasterParams {
     fn encode(&self, out: &mut dyn alloy::rlp::BufMut) {
+        // paymaster params have to be encoded as a list.
+        let h = Header {
+            list: true,
+            payload_length: self.paymaster.length() + self.paymaster_input.length(),
+        };
+        h.encode(out);
         self.paymaster.encode(out);
         self.paymaster_input.encode(out);
     }
-
-    // TODO: implement length method
 }

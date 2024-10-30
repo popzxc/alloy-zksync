@@ -400,11 +400,12 @@ impl From<TxEip712> for alloy::rpc::types::transaction::TransactionRequest {
 mod tests {
     use std::str::FromStr;
 
-    use crate::network::unsigned_tx::eip712::Eip712Meta;
+    use crate::network::unsigned_tx::eip712::{Eip712Meta, PaymasterParams};
 
     use super::TxEip712;
     use alloy::consensus::SignableTransaction;
-    use alloy::primitives::{hex, Address, FixedBytes, Signature, B256, U256};
+    use alloy::hex::FromHex;
+    use alloy::primitives::{address, hex, Address, Bytes, FixedBytes, Signature, B256, U256};
 
     #[test]
     fn decode_eip712_tx() {
@@ -412,6 +413,33 @@ mod tests {
         let encoded = hex::decode("f8b701800b0c940754b07d1ea3071c3ec9bd86b2aa6f1a59a514980a8301020380a0635f9ee3a1523de15fc8b72a0eea12f5247c6b6e2369ed158274587af6496599a030f7c66d1ed24fca92527e6974b85b07ec30fdd5c2d41eae46966224add965f982010e9409a6aa96b9a17d7f7ba3e3b19811c082aba9f1e304e1a0020202020202020202020202020202020202020202020202020202020202020283010203d694000000000000000000000000000000000000000080").unwrap();
         let _tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
         // TODO: Add assertions.
+    }
+
+    #[test]
+    fn decode_eip712_tx_with_paymaster() {
+        // This is request to AA account with paymaster set and no signature.
+        // Does not have type byte.
+        let encoded = hex::decode("f9036580843b9aca00843b9aca0083989680949c1a3d7c98dbf89c7f5d167f2219c29c2fe775a780b903045abef77a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002e0000000000000000000000000000000000000000000000000000000000000008000000000000000000000000051ef809ffd89cf8056d4c17f0aff1b6f8257eb6000000000000000000000000000000000000000000000000000000000000001f4000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000001e10100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000010f0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000078cad996530109838eb016619f5931a03250489a000000000000000000000000aaf5f437fb0524492886fba64d703df15bf619ae000000000000000000000000000000000000000000000000000000000000010f00000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064a41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080808082010f94b2a6e81272904caf680008078feb36336d9376b482c350c080d89499e12239cbf8112fbb3f7fd473d0558031abcbb5821234").unwrap();
+        let signed_tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
+        let tx = signed_tx.tx();
+        assert_eq!(tx.chain_id, 271);
+        assert_eq!(
+            tx.from,
+            address!("b2a6e81272904caf680008078feb36336d9376b4")
+        );
+        assert_eq!(tx.gas_limit, 10000000);
+        assert_eq!(
+            tx.eip712_meta.paymaster_params.as_ref().unwrap().paymaster,
+            address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5")
+        );
+        assert_eq!(
+            tx.eip712_meta
+                .paymaster_params
+                .as_ref()
+                .unwrap()
+                .paymaster_input,
+            Bytes::from_hex("0x1234").unwrap()
+        );
     }
 
     #[test]
@@ -455,6 +483,40 @@ mod tests {
             B256::from_str("0xb85668399db249d62d06bbc59eace82e01364602fb7159e161ca810ff6ddbbf4")
                 .unwrap();
         assert_eq!(*decoded.hash(), expected_hash);
+    }
+
+    #[test]
+    fn test_eip712_tx_encode_decode_with_paymaster() {
+        let eip712_meta = Eip712Meta {
+            gas_per_pubdata: U256::from(4),
+            factory_deps: vec![vec![2; 32].into()],
+            custom_signature: Some(vec![].into()),
+            paymaster_params: Some(PaymasterParams {
+                paymaster: address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5"),
+                paymaster_input: Bytes::from_hex("0x112233").unwrap(),
+            }),
+        };
+        let tx = TxEip712 {
+            chain_id: 270,
+            from: Address::from_str("0xe30f4fb40666753a7596d315f2f1f1d140d1508b").unwrap(),
+            to: Address::from_str("0x82112600a140ceaa9d7da373bb65453f7d99af4b").unwrap(),
+            nonce: U256::from(1),
+            value: U256::from(10),
+            gas_limit: 12,
+            max_fee_per_gas: 11,
+            max_priority_fee_per_gas: 0,
+            input: vec![0x01, 0x02, 0x03].into(),
+            eip712_meta,
+        };
+
+        // This is a random signature, but that's ok.
+        let signature = Signature::from_str("0x3faf83b5451ad3001f96f577b0bb5dfcaa7769ab11908f281dc6b15c45a3986f0325197832aac9a7ab2f5a83873834d457e0d22c1e72377d45364c6968f8ac3b1c").unwrap();
+
+        let mut buf = Vec::new();
+        tx.encode_with_signature_fields(&signature, &mut buf);
+        let decoded = TxEip712::decode_signed_fields(&mut &buf[..]).unwrap();
+        // Make sure that paymaster data was loaded correctly.
+        assert_eq!(decoded, tx.into_signed(signature));
     }
 
     // #[test]

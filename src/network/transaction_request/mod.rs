@@ -1,7 +1,7 @@
 use alloy::network::{
     Network, TransactionBuilder, TransactionBuilderError, UnbuiltTransactionError,
 };
-use alloy::primitives::{TxKind, B256, U256};
+use alloy::primitives::{Bytes, TxKind, B256, U256};
 
 use crate::contracts::l2::contract_deployer::CONTRACT_DEPLOYER_ADDRESS;
 use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
@@ -43,6 +43,17 @@ impl TransactionRequest {
 
     pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
         self.set_paymaster(paymaster_params);
+        self
+    }
+
+    pub fn set_custom_signature(&mut self, custom_signature: Bytes) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .custom_signature = Some(custom_signature);
+    }
+
+    pub fn with_custom_signature(mut self, custom_signature: Bytes) -> Self {
+        self.set_custom_signature(custom_signature);
         self
     }
 

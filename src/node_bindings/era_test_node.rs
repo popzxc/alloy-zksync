@@ -466,9 +466,8 @@ mod tests {
             .on_http(rpc_url);
 
         let chain_id = provider.get_chain_id().await.unwrap();
-        let chain_id_u64: u64 = chain_id.try_into().expect("Chain ID is not a valid u64");
 
-        assert_eq!(chain_id_u64, 324);
+        assert_eq!(chain_id, 324);
 
         drop(era_test_node);
     }
@@ -489,12 +488,9 @@ mod tests {
 
         // Query the latest block number to verify the fork block number.
         let block_number = provider.get_block_number().await.unwrap();
-        let block_number_u64: u64 = block_number
-            .try_into()
-            .expect("Block number is not a valid u64");
 
         assert_eq!(
-            block_number_u64, fork_block_number,
+            block_number, fork_block_number,
             "The node did not fork at the expected block number"
         );
 

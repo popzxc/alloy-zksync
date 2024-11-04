@@ -459,10 +459,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn fork_initializes_correct_chain() {
-        // TODO: @dutterbutter update once PR on era-test-node is merged
-        let era_test_node = EraTestNode::at("./era-test-node/target/release/era_test_node")
-            .fork("mainnet")
-            .spawn();
+        let era_test_node = EraTestNode::new().fork("mainnet").spawn();
         let rpc_url = era_test_node.endpoint_url();
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
@@ -478,11 +475,9 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn fork_initializes_at_specified_block() {
-        // TODO: @dutterbutter update once PR on era-test-node is merged
-        let era_test_node_path = "./era-test-node/target/release/era_test_node";
         let fork_block_number = 47854817;
 
-        let era_test_node = EraTestNode::at(era_test_node_path)
+        let era_test_node = EraTestNode::new()
             .fork("mainnet")
             .fork_block_number(fork_block_number)
             .spawn();

@@ -20,11 +20,6 @@ pub struct TransactionRequest {
 
 // TODO: Extension trait for `TransactionBuilder`?
 impl TransactionRequest {
-    pub fn with_base(mut self, base: alloy::rpc::types::transaction::TransactionRequest) -> Self {
-        self.base = base;
-        self
-    }
-
     pub fn gas_per_pubdata(&self) -> Option<U256> {
         self.eip_712_meta.as_ref().map(|meta| meta.gas_per_pubdata)
     }
@@ -382,5 +377,14 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         wallet: &W,
     ) -> Result<<Zksync as Network>::TxEnvelope, TransactionBuilderError<Zksync>> {
         Ok(wallet.sign_request(self).await?)
+    }
+}
+
+impl From<alloy::rpc::types::transaction::TransactionRequest> for TransactionRequest {
+    fn from(value: alloy::rpc::types::transaction::TransactionRequest) -> Self {
+        Self {
+            base: value,
+            ..Default::default()
+        }
     }
 }

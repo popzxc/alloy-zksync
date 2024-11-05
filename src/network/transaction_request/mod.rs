@@ -46,6 +46,17 @@ impl TransactionRequest {
         self
     }
 
+    pub fn set_factory_deps(&mut self, factory_deps: Vec<Bytes>) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .factory_deps = factory_deps;
+    }
+
+    pub fn with_factory_deps(mut self, factory_deps: Vec<Bytes>) -> Self {
+        self.set_factory_deps(factory_deps);
+        self
+    }
+
     pub fn set_custom_signature(&mut self, custom_signature: Bytes) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
@@ -366,5 +377,14 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         wallet: &W,
     ) -> Result<<Zksync as Network>::TxEnvelope, TransactionBuilderError<Zksync>> {
         Ok(wallet.sign_request(self).await?)
+    }
+}
+
+impl From<alloy::rpc::types::transaction::TransactionRequest> for TransactionRequest {
+    fn from(value: alloy::rpc::types::transaction::TransactionRequest) -> Self {
+        Self {
+            base: value,
+            ..Default::default()
+        }
     }
 }

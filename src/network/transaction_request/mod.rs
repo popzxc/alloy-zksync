@@ -20,6 +20,11 @@ pub struct TransactionRequest {
 
 // TODO: Extension trait for `TransactionBuilder`?
 impl TransactionRequest {
+    pub fn with_base(mut self, base: alloy::rpc::types::transaction::TransactionRequest) -> Self {
+        self.base = base;
+        self
+    }
+
     pub fn gas_per_pubdata(&self) -> Option<U256> {
         self.eip_712_meta.as_ref().map(|meta| meta.gas_per_pubdata)
     }
@@ -43,6 +48,17 @@ impl TransactionRequest {
 
     pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
         self.set_paymaster(paymaster_params);
+        self
+    }
+
+    pub fn set_factory_deps(&mut self, factory_deps: Vec<Bytes>) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .factory_deps = factory_deps;
+    }
+
+    pub fn with_factory_deps(mut self, factory_deps: Vec<Bytes>) -> Self {
+        self.set_factory_deps(factory_deps);
         self
     }
 

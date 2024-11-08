@@ -155,10 +155,8 @@ pub struct EraTestNode {
     chain_id: Option<ChainId>,
     // TODO
     // mnemonic: Option<String>,
-    // TODO
-    // fork: Option<String>,
-    // TODO
-    // fork_block_number: Option<u64>,
+    fork: Option<String>,
+    fork_block_number: Option<u64>,
     args: Vec<String>,
     timeout: Option<u64>,
 }
@@ -245,24 +243,22 @@ impl EraTestNode {
     //     self
     // }
 
-    // TODO
-    // /// Sets the `fork-block-number` which will be used in addition to [`Self::fork`].
-    // ///
-    // /// **Note:** if set, then this requires `fork` to be set as well
-    // pub const fn fork_block_number(mut self, fork_block_number: u64) -> Self {
-    //     self.fork_block_number = Some(fork_block_number);
-    //     self
-    // }
+    /// Sets the `fork-block-number` which will be used in addition to [`Self::fork`].
+    ///
+    /// **Note:** if set, then this requires `fork` to be set as well
+    pub const fn fork_block_number(mut self, fork_block_number: u64) -> Self {
+        self.fork_block_number = Some(fork_block_number);
+        self
+    }
 
-    // TODO
-    // /// Sets the `fork` argument to fork from another currently running Ethereum client
-    // /// at a given block. Input should be the HTTP location and port of the other client,
-    // /// e.g. `http://localhost:8545`. You can optionally specify the block to fork from
-    // /// using an @ sign: `http://localhost:8545@1599200`
-    // pub fn fork<T: Into<String>>(mut self, fork: T) -> Self {
-    //     self.fork = Some(fork.into());
-    //     self
-    // }
+    /// Sets the `fork` argument to fork from another currently running Ethereum client
+    /// at a given block. Input should be the HTTP location and port of the other client,
+    /// e.g. `http://localhost:8545`. You can optionally specify the block to fork from
+    /// using an @ sign: `http://localhost:8545@1599200`
+    pub fn fork<T: Into<String>>(mut self, fork: T) -> Self {
+        self.fork = Some(fork.into());
+        self
+    }
 
     /// Adds an argument to pass to the `era_test_node`.
     pub fn arg<T: Into<String>>(mut self, arg: T) -> Self {
@@ -324,18 +320,18 @@ impl EraTestNode {
         //     cmd.arg("-b").arg(block_time.to_string());
         // }
 
-        // if let Some(fork) = self.fork {
-        //     cmd.arg("-f").arg(fork);
-        // }
-
-        // if let Some(fork_block_number) = self.fork_block_number {
-        //     cmd.arg("--fork-block-number")
-        //         .arg(fork_block_number.to_string());
-        // }
-
         cmd.args(self.args);
 
-        cmd.arg("run");
+        if let Some(fork) = self.fork {
+            cmd.arg("fork").arg(fork);
+            if let Some(fork_block_number) = self.fork_block_number {
+                println!("fork_block_number ln 312: {}", fork_block_number);
+                cmd.arg("--fork-block-number")
+                    .arg(fork_block_number.to_string());
+            }
+        } else {
+            cmd.arg("run");
+        }
 
         let mut child = cmd.spawn().map_err(EraTestNodeError::SpawnError)?;
 
@@ -432,6 +428,7 @@ impl EraTestNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloy::providers::{Provider, ProviderBuilder};
 
     #[test]
     fn can_launch_era_test_node() {
@@ -460,11 +457,45 @@ mod tests {
     //     let _ = EraTestNode::new().block_time_f64(0.5).spawn();
     // }
 
-    // #[test]
-    // fn assert_chain_id() {
-    //     let era_test_node = EraTestNode::new().fork("https://rpc.ankr.com/eth").spawn();
-    //     assert_eq!(era_test_node.chain_id(), 1);
-    // }
+    #[tokio::test(flavor = "multi_thread")]
+    async fn fork_initializes_correct_chain() {
+        let era_test_node = EraTestNode::new().fork("mainnet").spawn();
+        let rpc_url = era_test_node.endpoint_url();
+        let provider = ProviderBuilder::new()
+            .with_recommended_fillers()
+            .on_http(rpc_url);
+
+        let chain_id = provider.get_chain_id().await.unwrap();
+
+        assert_eq!(chain_id, 324);
+
+        drop(era_test_node);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn fork_initializes_at_specified_block() {
+        let fork_block_number = 47854817;
+
+        let era_test_node = EraTestNode::new()
+            .fork("mainnet")
+            .fork_block_number(fork_block_number)
+            .spawn();
+
+        let rpc_url = era_test_node.endpoint_url();
+        let provider = ProviderBuilder::new()
+            .with_recommended_fillers()
+            .on_http(rpc_url);
+
+        // Query the latest block number to verify the fork block number.
+        let block_number = provider.get_block_number().await.unwrap();
+
+        assert_eq!(
+            block_number, fork_block_number,
+            "The node did not fork at the expected block number"
+        );
+
+        drop(era_test_node);
+    }
 
     #[test]
     fn assert_chain_id_without_rpc() {

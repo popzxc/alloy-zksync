@@ -1,15 +1,20 @@
-use alloy::primitives::{Address, U256, U64};
+use alloy::primitives::{Address, TxHash, U256, U64};
 use alloy::providers::fillers::{ChainIdFiller, JoinFill, NonceFiller, RecommendedFillers};
 use alloy::providers::{Identity, Provider, ProviderBuilder, ProviderCall};
 use alloy::rpc::client::NoParams;
 use alloy::transports::{BoxTransport, Transport};
 use fillers::Eip712FeeFiller;
 use serde::{Deserialize, Serialize};
-
-use crate::network::transaction_request::TransactionRequest;
-use crate::network::Zksync;
+use std::collections::HashMap;
+use zksync_types::{
+    api::{BridgeAddresses, TransactionDetails},
+    Transaction,
+};
+use zksync_web3_decl::types::Token;
 
 pub use self::provider_builder_ext::ProviderBuilderExt;
+use crate::network::transaction_request::TransactionRequest;
+use crate::network::Zksync;
 
 pub mod fillers;
 pub mod layers;
@@ -65,6 +70,51 @@ where
         tx: TransactionRequest,
     ) -> ProviderCall<T, (TransactionRequest,), Eip712Fee> {
         self.client().request("zks_estimateFee", (tx,)).into()
+    }
+
+    /// Retrieves the L1 base token address.
+    fn get_base_token_l1_address(&self) -> ProviderCall<T, NoParams, Address> {
+        self.client()
+            .request_noparams("zks_getBaseTokenL1Address")
+            .into()
+    }
+
+    /// Retrieves details for a given transaction.
+    fn get_transaction_details(
+        &self,
+        hash: TxHash,
+    ) -> ProviderCall<T, (TxHash,), TransactionDetails> {
+        self.client()
+            .request("zks_getTransactionDetails", (hash,))
+            .into()
+    }
+
+    /// Lists raw transactions in a specified block without processing them.
+    fn get_raw_block_transactions(
+        &self,
+        block_number: u32,
+    ) -> ProviderCall<T, (u32,), Vec<Transaction>> {
+        self.client()
+            .request("zks_getRawBlockTransactions", (block_number,))
+            .into()
+    }
+
+    /// Retrieves the addresses of canonical bridge contracts.
+    fn get_bridge_contracts(&self) -> ProviderCall<T, NoParams, BridgeAddresses> {
+        self.client()
+            .request_noparams("zks_getBridgeContracts")
+            .into()
+    }
+
+    /// Lists confirmed tokens that were bridged to zkSync Era via the official bridge.
+    fn get_confirmed_tokens(
+        &self,
+        start_id: u32,
+        limit: u8,
+    ) -> ProviderCall<T, (u32, u8), Vec<Token>> {
+        self.client()
+            .request("zks_getConfirmedTokens", (start_id, limit))
+            .into()
     }
 }
 

@@ -7,7 +7,12 @@ license = "MIT OR Apache-2.0"
 description = "ZKsync network implementation for alloy"
 
 [dependencies]
-alloy = { version = "0.4", features = ["full", "rlp", "serde", "sol-types"] } # TODO: Set features granularly?
+alloy = { version = "0.4", features = [
+    "full",
+    "rlp",
+    "serde",
+    "sol-types",
+] } # TODO: Set features granularly?
 async-trait = "0.1.80"
 futures-utils-wasm = "0.1.0"
 k256 = "0.13.3"
@@ -17,6 +22,11 @@ serde = "1.0.203"
 thiserror = "1.0.61"
 tracing = "0.1.40"
 url = "2.5.2"
+# zkSync types
+zksync_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "1bfff0e007e2fb5a4b4b885cf5c69a5cd290888b" }
+zksync_web3_decl = { git = "https://github.com/matter-labs/zksync-era.git", rev = "1bfff0e007e2fb5a4b4b885cf5c69a5cd290888b", features = [
+    "server",
+] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

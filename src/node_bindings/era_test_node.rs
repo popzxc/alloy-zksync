@@ -214,12 +214,11 @@ impl EraTestNode {
         self
     }
 
-    // TODO
-    // /// Sets the chain_id the `era_test_node` instance will use.
-    // pub const fn chain_id(mut self, chain_id: u64) -> Self {
-    //     self.chain_id = Some(chain_id);
-    //     self
-    // }
+    /// Sets the chain_id the `era_test_node` instance will use.
+    pub const fn chain_id(mut self, chain_id: u64) -> Self {
+        self.chain_id = Some(chain_id);
+        self
+    }
 
     // TODO
     // /// Sets the mnemonic which will be used when the `era_test_node` instance is launched.
@@ -312,9 +311,9 @@ impl EraTestNode {
         //     cmd.arg("-m").arg(mnemonic);
         // }
 
-        // if let Some(chain_id) = self.chain_id {
-        //     cmd.arg("--chain-id").arg(chain_id.to_string());
-        // }
+        if let Some(chain_id) = self.chain_id {
+            cmd.arg("--chain-id").arg(chain_id.to_string());
+        }
 
         // if let Some(block_time) = self.block_time {
         //     cmd.arg("-b").arg(block_time.to_string());
@@ -456,6 +455,22 @@ mod tests {
     // fn can_launch_era_test_node_with_sub_seconds_block_time() {
     //     let _ = EraTestNode::new().block_time_f64(0.5).spawn();
     // }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn fork_initializes_correct_chain_id() {
+        let chain_id = 92;
+        let era_test_node = EraTestNode::new().chain_id(chain_id).spawn();
+        let rpc_url = era_test_node.endpoint_url();
+        let provider = ProviderBuilder::new()
+            .with_recommended_fillers()
+            .on_http(rpc_url);
+
+        let returned_chain_id = provider.get_chain_id().await.unwrap();
+
+        assert_eq!(returned_chain_id, chain_id);
+
+        drop(era_test_node);
+    }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn fork_initializes_correct_chain() {

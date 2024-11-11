@@ -411,8 +411,44 @@ mod tests {
     fn decode_eip712_tx() {
         // Does not have type byte.
         let encoded = hex::decode("f8b701800b0c940754b07d1ea3071c3ec9bd86b2aa6f1a59a514980a8301020380a0635f9ee3a1523de15fc8b72a0eea12f5247c6b6e2369ed158274587af6496599a030f7c66d1ed24fca92527e6974b85b07ec30fdd5c2d41eae46966224add965f982010e9409a6aa96b9a17d7f7ba3e3b19811c082aba9f1e304e1a0020202020202020202020202020202020202020202020202020202020202020283010203d694000000000000000000000000000000000000000080").unwrap();
-        let _tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
-        // TODO: Add assertions.
+        let signed_tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
+        let tx = signed_tx.tx();
+        assert_eq!(tx.chain_id, 270);
+        assert_eq!(tx.nonce, U256::from(1));
+        assert_eq!(tx.gas_limit, 12);
+        assert_eq!(tx.max_fee_per_gas, 11);
+        assert_eq!(tx.max_priority_fee_per_gas, 0);
+        assert_eq!(tx.to, address!("0754b07d1ea3071c3ec9bd86b2aa6f1a59a51498"));
+        assert_eq!(
+            tx.from,
+            address!("09a6aa96b9a17d7f7ba3e3b19811c082aba9f1e3")
+        );
+        assert_eq!(tx.value, U256::from(10));
+        assert_eq!(tx.input, Bytes::from_hex("0x010203").unwrap());
+        assert_eq!(tx.eip712_meta.gas_per_pubdata, U256::from(4));
+        assert_eq!(
+            tx.eip712_meta.factory_deps,
+            vec![Bytes::from_hex(
+                "0x0202020202020202020202020202020202020202020202020202020202020202"
+            )
+            .unwrap()]
+        );
+        assert_eq!(
+            tx.eip712_meta.custom_signature,
+            Some(Bytes::from_hex("0x010203").unwrap())
+        );
+        assert_eq!(
+            tx.eip712_meta
+                .paymaster_params
+                .as_ref()
+                .unwrap()
+                .paymaster_input,
+            Bytes::from_hex("0x").unwrap()
+        );
+        assert_eq!(
+            tx.eip712_meta.paymaster_params.as_ref().unwrap().paymaster,
+            address!("0000000000000000000000000000000000000000")
+        );
     }
 
     #[test]
@@ -423,11 +459,24 @@ mod tests {
         let signed_tx = TxEip712::decode_signed_fields(&mut &encoded[..]).unwrap();
         let tx = signed_tx.tx();
         assert_eq!(tx.chain_id, 271);
+        assert_eq!(tx.nonce, U256::from(0));
+        assert_eq!(tx.gas_limit, 10000000);
+        assert_eq!(tx.max_fee_per_gas, 1000000000);
+        assert_eq!(tx.max_priority_fee_per_gas, 1000000000);
+        assert_eq!(tx.to, address!("9c1a3d7c98dbf89c7f5d167f2219c29c2fe775a7"));
         assert_eq!(
             tx.from,
             address!("b2a6e81272904caf680008078feb36336d9376b4")
         );
-        assert_eq!(tx.gas_limit, 10000000);
+        assert_eq!(tx.value, U256::from(0));
+        assert_eq!(tx.input, Bytes::from_hex("5abef77a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002e0000000000000000000000000000000000000000000000000000000000000008000000000000000000000000051ef809ffd89cf8056d4c17f0aff1b6f8257eb6000000000000000000000000000000000000000000000000000000000000001f4000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000001e10100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000010f0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000078cad996530109838eb016619f5931a03250489a000000000000000000000000aaf5f437fb0524492886fba64d703df15bf619ae000000000000000000000000000000000000000000000000000000000000010f00000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064a41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap());
+
+        assert_eq!(tx.eip712_meta.gas_per_pubdata, U256::from(50000));
+        assert_eq!(tx.eip712_meta.factory_deps, vec![] as Vec<Bytes>);
+        assert_eq!(
+            tx.eip712_meta.custom_signature,
+            Some(Bytes::from_hex("0x").unwrap())
+        );
         assert_eq!(
             tx.eip712_meta.paymaster_params.as_ref().unwrap().paymaster,
             address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5")

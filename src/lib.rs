@@ -8,4 +8,5 @@ pub mod contracts;
 pub mod network;
 pub mod node_bindings;
 pub mod provider;
+pub mod types;
 pub mod wallet;

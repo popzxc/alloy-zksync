@@ -253,6 +253,8 @@ pub struct L2ToL1LogProof {
     pub root: B256,
 }
 
+type GetMsgProofRequest = (u64, Address, B256, Option<usize>);
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Execute {
@@ -387,7 +389,7 @@ where
         sender: Address,
         msg: B256,
         l2_log_position: Option<usize>,
-    ) -> ProviderCall<T, (u64, Address, B256, Option<usize>), Option<L2ToL1LogProof>> {
+    ) -> ProviderCall<T, GetMsgProofRequest, Option<L2ToL1LogProof>> {
         self.client()
             .request(
                 "zks_getL2ToL1MsgProof",

@@ -233,3 +233,193 @@ impl RecommendedFillers for Zksync {
 pub fn zksync_provider() -> ProviderBuilder<Identity, Identity, Zksync> {
     ProviderBuilder::<Identity, Identity, Zksync>::default()
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+    use alloy::primitives::address;
+    use alloy::primitives::{Address, U256};
+    use std::net::SocketAddr;
+
+    use chrono::{DateTime, Utc};
+    use jsonrpsee::core::RpcResult;
+    use jsonrpsee::server::{RpcModule, Server};
+
+    fn str_to_utc(date_utc_str: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(date_utc_str)
+            .unwrap()
+            .with_timezone(&Utc)
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn get_testnet_paymaster_when_its_not_set() {
+        let server = Server::builder()
+            .build("127.0.0.1:0".parse::<SocketAddr>().unwrap())
+            .await
+            .unwrap();
+        let mut module = RpcModule::new(());
+        module
+            .register_method::<RpcResult<Option<Address>>, _>(
+                "zks_getTestnetPaymaster",
+                move |_, _, _| Ok(None),
+            )
+            .unwrap();
+
+        let server_addr: SocketAddr = server.local_addr().unwrap();
+        let handle = server.start(module);
+        let full_addr = format!("http://{}", server_addr);
+        tokio::spawn(handle.stopped());
+
+        let provider = zksync_provider()
+            .with_recommended_fillers()
+            .on_http(full_addr.parse().unwrap());
+
+        let received_paymaster_address = provider.get_testnet_paymaster().await.unwrap();
+        assert_eq!(received_paymaster_address, None);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn get_testnet_paymaster_when_its_set() {
+        let server = Server::builder()
+            .build("127.0.0.1:0".parse::<SocketAddr>().unwrap())
+            .await
+            .unwrap();
+        let mut module = RpcModule::new(());
+        let network_testnet_address = address!("3cb2b87d10ac01736a65688f3e0fb1b070b3eea3");
+        module
+            .register_method::<RpcResult<Option<Address>>, _>(
+                "zks_getTestnetPaymaster",
+                move |_, _, _| Ok(Some(network_testnet_address)),
+            )
+            .unwrap();
+
+        let server_addr: SocketAddr = server.local_addr().unwrap();
+        let handle = server.start(module);
+        let full_addr = format!("http://{}", server_addr);
+        tokio::spawn(handle.stopped());
+
+        let provider = zksync_provider()
+            .with_recommended_fillers()
+            .on_http(full_addr.parse().unwrap());
+
+        let received_paymaster_address = provider.get_testnet_paymaster().await.unwrap();
+        assert_eq!(received_paymaster_address.unwrap(), network_testnet_address);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn get_block_details_when_its_available() {
+        let server = Server::builder()
+            .build("127.0.0.1:0".parse::<SocketAddr>().unwrap())
+            .await
+            .unwrap();
+        let mut module: RpcModule<()> = RpcModule::new(());
+        let network_block_details = BlockDetails {
+            number: 140599,
+            l1_batch_number: 1617,
+            l1_tx_count: 0,
+            l2_tx_count: 20,
+            timestamp: 1679815038,
+            fair_pubdata_price: Some(U256::from(7069038)),
+            root_hash: Some(
+                B256::from_str(
+                    "0xf1adac176fc939313eea4b72055db0622a10bbd9b7a83097286e84e471d2e7df",
+                )
+                .unwrap(),
+            ),
+            status: BlockStatus::Verified,
+            commit_tx_hash: Some(
+                B256::from_str(
+                    "0xd045e3698f018cb233c3817eb53a41a4c5b28784ffe659da246aa33bda34350c",
+                )
+                .unwrap(),
+            ),
+            committed_at: Some(str_to_utc("2023-03-26T07:21:21.046817Z")),
+            prove_tx_hash: Some(
+                B256::from_str(
+                    "0x1591e9b16ff6eb029cc865614094b2e6dd872c8be40b15cc56164941ed723a1a",
+                )
+                .unwrap(),
+            ),
+            proven_at: Some(str_to_utc("2023-03-26T19:48:35.200565Z")),
+            execute_tx_hash: Some(
+                B256::from_str(
+                    "0xbb66aa75f437bb4255cf751badfc6b142e8d4d3a4e531c7b2e737a22870ff19e",
+                )
+                .unwrap(),
+            ),
+            executed_at: Some(str_to_utc("2023-03-27T07:44:52.187764Z")),
+            l1_gas_price: U256::from(2069038),
+            l2_fair_gas_price: U256::from(250000000),
+            base_system_contracts_hashes: BaseSystemContractsHashes {
+                bootloader: B256::from_str(
+                    "0x010007793a328ef16cc7086708f7f3292ff9b5eed9e7e539c184228f461bf4ef",
+                )
+                .unwrap(),
+                default_aa: B256::from_str(
+                    "0x0100067d861e2f5717a12c3e869cfb657793b86bbb0caa05cc1421f16c5217bc",
+                )
+                .unwrap(),
+                evm_emulator: Some(
+                    B256::from_str(
+                        "0x0100057d861e2f5717a12c3e869cfb657793b86bbb0caa05cc1421f16c5217bc",
+                    )
+                    .unwrap(),
+                ),
+            },
+            operator_address: address!("feee860e7aae671124e9a4e61139f3a5085dfeee"),
+            protocol_version: Some("Version5".to_string()),
+        };
+        let network_block_details_rpc_response = network_block_details.clone();
+        module
+            .register_method::<RpcResult<Option<BlockDetails>>, _>(
+                "zks_getBlockDetails",
+                move |params, _, _| {
+                    let (block_number,) = params.parse::<(u64,)>().unwrap();
+                    assert_eq!(block_number, 100);
+                    Ok(Some(network_block_details_rpc_response.clone()))
+                },
+            )
+            .unwrap();
+
+        let server_addr: SocketAddr = server.local_addr().unwrap();
+        let handle = server.start(module);
+        let full_addr = format!("http://{}", server_addr);
+        tokio::spawn(handle.stopped());
+
+        let provider = zksync_provider()
+            .with_recommended_fillers()
+            .on_http(full_addr.parse().unwrap());
+
+        let received_block_details = provider.get_block_details(100).await.unwrap();
+        assert_eq!(received_block_details.unwrap(), network_block_details);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn get_block_details_when_its_not_available() {
+        let server = Server::builder()
+            .build("127.0.0.1:0".parse::<SocketAddr>().unwrap())
+            .await
+            .unwrap();
+        let mut module = RpcModule::new(());
+        module
+            .register_method::<RpcResult<Option<BlockDetails>>, _>(
+                "zks_getBlockDetails",
+                move |_, _, _| Ok(None),
+            )
+            .unwrap();
+
+        let server_addr: SocketAddr = server.local_addr().unwrap();
+        let handle = server.start(module);
+        let full_addr = format!("http://{}", server_addr);
+        tokio::spawn(handle.stopped());
+
+        let provider = zksync_provider()
+            .with_recommended_fillers()
+            .on_http(full_addr.parse().unwrap());
+
+        let received_block_details = provider.get_block_details(100).await.unwrap();
+        assert_eq!(received_block_details, None);
+    }
+}

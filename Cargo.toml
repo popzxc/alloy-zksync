@@ -24,6 +24,7 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 hex = "0.4.3"
 assert_matches = "1.5.0"
+jsonrpsee = { version = "0.24.7", features = ["server"] }
 
 [patch.crates-io]
 # Needed until https://github.com/alloy-rs/alloy/pull/1466 is released

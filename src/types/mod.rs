@@ -32,14 +32,14 @@ pub struct BridgeAddresses {
     pub l2_legacy_shared_bridge: Option<Address>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BaseSystemContractsHashes {
     pub bootloader: B256,
     pub default_aa: B256,
     pub evm_emulator: Option<B256>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum BlockStatus {
     Sealed,
@@ -47,7 +47,7 @@ pub enum BlockStatus {
 }
 
 /// Response type for `zks_getBlockDetails`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockDetails {
     pub number: u64,

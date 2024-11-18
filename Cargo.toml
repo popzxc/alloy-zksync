@@ -1,13 +1,13 @@
 [package]
 name = "alloy-zksync"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Igor Aleksanov <popzxc@yandex.ru>"]
 license = "MIT OR Apache-2.0"
 description = "ZKsync network implementation for alloy"
 
 [dependencies]
-alloy = { version = "0.4", features = ["full", "rlp", "serde", "sol-types"] } # TODO: Set features granularly?
+alloy = { version = "0.5", features = ["full", "rlp", "serde", "sol-types"] } # TODO: Set features granularly?
 async-trait = "0.1.80"
 chrono = { version = "0.4.38", features = ["serde"] }
 futures-utils-wasm = "0.1.0"

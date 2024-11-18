@@ -1,15 +1,20 @@
+use core::fmt;
+
 use alloy::consensus::TxReceipt;
 use alloy::network::eip2718::{Decodable2718, Encodable2718};
 use alloy::primitives::Log;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ReceiptEnvelope<T = Log> {
     Native(alloy::consensus::ReceiptEnvelope<T>),
 }
 
-impl<T> TxReceipt<T> for ReceiptEnvelope<T> {
+impl<T> TxReceipt<T> for ReceiptEnvelope<T>
+where
+    T: Clone + fmt::Debug + PartialEq + Eq + Send + Sync,
+{
     fn status_or_post_state(&self) -> alloy::consensus::Eip658Value {
         match self {
             ReceiptEnvelope::Native(re) => re.status_or_post_state(),

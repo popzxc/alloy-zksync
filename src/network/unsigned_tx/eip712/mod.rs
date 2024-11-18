@@ -258,7 +258,7 @@ impl Transaction for TxEip712 {
         None
     }
 
-    fn to(&self) -> TxKind {
+    fn to(&self) -> Option<Address> {
         self.to.into()
     }
 
@@ -266,7 +266,7 @@ impl Transaction for TxEip712 {
         self.value
     }
 
-    fn input(&self) -> &[u8] {
+    fn input(&self) -> &Bytes {
         &self.input
     }
 
@@ -300,6 +300,10 @@ impl Transaction for TxEip712 {
 
     fn authorization_list(&self) -> Option<&[alloy::eips::eip7702::SignedAuthorization]> {
         None
+    }
+
+    fn kind(&self) -> TxKind {
+        self.to.into()
     }
 }
 

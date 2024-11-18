@@ -39,7 +39,7 @@ impl alloy::consensus::Transaction for TransactionResponse {
         self.inner.priority_fee_or_price()
     }
 
-    fn to(&self) -> alloy::primitives::TxKind {
+    fn to(&self) -> Option<alloy::primitives::Address> {
         self.inner.to()
     }
 
@@ -47,7 +47,7 @@ impl alloy::consensus::Transaction for TransactionResponse {
         self.inner.value()
     }
 
-    fn input(&self) -> &[u8] {
+    fn input(&self) -> &alloy::primitives::Bytes {
         self.inner.input()
     }
 
@@ -65,6 +65,10 @@ impl alloy::consensus::Transaction for TransactionResponse {
 
     fn authorization_list(&self) -> Option<&[alloy::eips::eip7702::SignedAuthorization]> {
         self.inner.authorization_list()
+    }
+
+    fn kind(&self) -> alloy::primitives::TxKind {
+        self.inner.kind()
     }
 }
 

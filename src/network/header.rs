@@ -83,8 +83,8 @@ impl alloy::consensus::BlockHeader for Header {
         self.inner.parent_beacon_block_root()
     }
 
-    fn requests_root(&self) -> Option<alloy::primitives::B256> {
-        self.inner.requests_root()
+    fn requests_hash(&self) -> Option<alloy::primitives::B256> {
+        self.inner.requests_hash()
     }
 
     fn extra_data(&self) -> &alloy::primitives::Bytes {

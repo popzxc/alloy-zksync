@@ -3599,8 +3599,3 @@ dependencies = [
  "quote",
  "syn 2.0.79",
 ]
-
-[[patch.unused]]
-name = "alloy"
-version = "0.4.2"
-source = "git+https://github.com/alloy-rs/alloy.git?rev=a5e06ec5e98e877497cbe22557083b6c3e755bc6#a5e06ec5e98e877497cbe22557083b6c3e755bc6"

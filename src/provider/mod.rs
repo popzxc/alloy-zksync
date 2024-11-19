@@ -461,10 +461,8 @@ mod tests {
                     .unwrap();
             },
             |provider: ZKsyncTestProvider| async move {
-                let received_gas_estimation = provider
-                    .estimate_gas_l1_to_l2(tx_request)
-                    .await
-                    .unwrap();
+                let received_gas_estimation =
+                    provider.estimate_gas_l1_to_l2(tx_request).await.unwrap();
                 assert_eq!(network_gas_estimation, received_gas_estimation);
             },
         )
@@ -1415,7 +1413,6 @@ mod tests {
         let network_fee_params_rpc_response = network_fee_params.clone();
         run_server_and_test(
             |module| {
-                
                 module
                     .register_method::<RpcResult<FeeParams>, _>(
                         "zks_getFeeParams",

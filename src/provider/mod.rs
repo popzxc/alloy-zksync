@@ -242,6 +242,9 @@ mod tests {
     use alloy::hex::FromHex;
     use alloy::primitives::address;
     use alloy::primitives::{Address, Bytes, U256};
+    use alloy::providers::{fillers::FillProvider, RootProvider};
+    use alloy::transports::http::Http;
+    use reqwest::Client;
     use std::net::SocketAddr;
 
     use crate::network::unsigned_tx::eip712::PaymasterParams;
@@ -256,10 +259,15 @@ mod tests {
             .unwrap()
             .with_timezone(&Utc)
     }
-
+    type ZKsyncTestProvider = FillProvider<
+        JoinFill<Identity, JoinFill<Eip712FeeFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        RootProvider<Http<Client>, Zksync>,
+        Http<Client>,
+        Zksync,
+    >;
     async fn run_server_and_test<Fut>(
-        register_rpc_module_fn: impl Fn(&mut RpcModule<()>),
-        test_fn: impl Fn(reqwest::Url) -> Fut,
+        register_rpc_module_fn: impl FnOnce(&mut RpcModule<()>),
+        test_fn: impl FnOnce(ZKsyncTestProvider) -> Fut,
     ) where
         Fut: Future<Output = ()>,
     {
@@ -274,7 +282,11 @@ mod tests {
         let handle = server.start(module);
         let full_addr = format!("http://{}", server_addr);
         tokio::spawn(handle.stopped());
-        test_fn(full_addr.parse().unwrap()).await;
+
+        let provider = zksync_provider()
+            .with_recommended_fillers()
+            .on_http(full_addr.parse().unwrap());
+        test_fn(provider).await;
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -289,11 +301,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_main_contract_address = provider.get_main_contract().await.unwrap();
                 assert_eq!(
                     network_main_contract_address,
@@ -315,11 +323,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_paymaster_address = provider.get_testnet_paymaster().await.unwrap();
                 assert_eq!(received_paymaster_address, None);
             },
@@ -339,11 +343,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_paymaster_address = provider.get_testnet_paymaster().await.unwrap();
                 assert_eq!(received_paymaster_address.unwrap(), network_testnet_address);
             },
@@ -362,11 +362,7 @@ mod tests {
                     })
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_l1_chain_id = provider.get_l1_chain_id().await.unwrap();
                 assert_eq!(network_l1_chain_id, received_l1_chain_id);
             },
@@ -385,11 +381,7 @@ mod tests {
                     })
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_l1_batch_number = provider.get_l1_batch_number().await.unwrap();
                 assert_eq!(network_l1_batch_number, received_l1_batch_number);
             },
@@ -409,21 +401,22 @@ mod tests {
         let tx_request = TransactionRequest::default()
             .with_to(address!("1111111111111111111111111111111111111111"))
             .with_from(address!("2222222222222222222222222222222222222222"));
+        let network_fee_rpc_response = network_fee.clone();
 
         run_server_and_test(
-            |module| {
-                let network_fee_rpc_response = network_fee.clone();
+            move |module| {
                 module
                     .register_method::<RpcResult<Eip712Fee>, _>(
                         "zks_estimateFee",
                         move |params, _, _| {
-                            let (tx_request,) = params.parse::<(TransactionRequest,)>().unwrap();
+                            let (tx_request_param,) =
+                                params.parse::<(TransactionRequest,)>().unwrap();
                             assert_eq!(
-                                tx_request.to().unwrap(),
+                                tx_request_param.to().unwrap(),
                                 address!("1111111111111111111111111111111111111111")
                             );
                             assert_eq!(
-                                tx_request.from().unwrap(),
+                                tx_request_param.from().unwrap(),
                                 address!("2222222222222222222222222222222222222222")
                             );
                             Ok(network_fee_rpc_response.clone())
@@ -431,12 +424,8 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
-                let received_fee = provider.estimate_fee(tx_request.clone()).await.unwrap();
+            |provider: ZKsyncTestProvider| async move {
+                let received_fee = provider.estimate_fee(tx_request).await.unwrap();
                 assert_eq!(network_fee, received_fee);
             },
         )
@@ -471,13 +460,9 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_gas_estimation = provider
-                    .estimate_gas_l1_to_l2(tx_request.clone())
+                    .estimate_gas_l1_to_l2(tx_request)
                     .await
                     .unwrap();
                 assert_eq!(network_gas_estimation, received_gas_estimation);
@@ -497,11 +482,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_bridge_hub_address = provider.get_bridgehub_contract().await.unwrap();
                 assert_eq!(received_bridge_hub_address, None);
             },
@@ -521,11 +502,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_bridge_hub_address = provider.get_bridgehub_contract().await.unwrap();
                 assert_eq!(
                     received_bridge_hub_address.unwrap(),
@@ -547,9 +524,10 @@ mod tests {
             l2_weth_bridge: Some(address!("6666666666666666666666666666666666666666")),
             l2_legacy_shared_bridge: Some(address!("7777777777777777777777777777777777777777")),
         };
+
+        let network_bridge_addresses_rpc_response = network_bridge_addresses.clone();
         run_server_and_test(
             |module| {
-                let network_bridge_addresses_rpc_response = network_bridge_addresses.clone();
                 module
                     .register_method::<RpcResult<BridgeAddresses>, _>(
                         "zks_getBridgeContracts",
@@ -557,11 +535,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_bridge_addresses = provider.get_bridge_contracts().await.unwrap();
                 assert_eq!(received_bridge_addresses, network_bridge_addresses);
             },
@@ -581,11 +555,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_base_token_l1_address =
                     provider.get_base_token_l1_address().await.unwrap();
                 assert_eq!(
@@ -617,9 +587,9 @@ mod tests {
         .into_iter()
         .collect();
 
+        let address_balances_rpc_response = address_balances.clone();
         run_server_and_test(
             |module| {
-                let address_balances_rpc_response = address_balances.clone();
                 module
                     .register_method::<RpcResult<HashMap<Address, U256>>, _>(
                         "zks_getAllAccountBalances",
@@ -634,14 +604,10 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_address_balances =
                     provider.get_all_account_balances(address).await.unwrap();
-                assert_eq!(address_balances.clone(), received_address_balances);
+                assert_eq!(address_balances, received_address_balances);
             },
         )
         .await;
@@ -672,10 +638,9 @@ mod tests {
             )
             .unwrap(),
         };
-
+        let network_msg_proof_rpc_response = network_msg_proof.clone();
         run_server_and_test(
             |module| {
-                let network_msg_proof_rpc_response = network_msg_proof.clone();
                 module
                     .register_method::<RpcResult<Option<L2ToL1LogProof>>, _>(
                         "zks_getL2ToL1MsgProof",
@@ -691,11 +656,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_msg_proof = provider
                     .get_l2_to_l1_msg_proof(block_number, sender, msg, l2_log_position)
                     .await
@@ -732,11 +693,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_msg_proof = provider
                     .get_l2_to_l1_msg_proof(block_number, sender, msg, l2_log_position)
                     .await
@@ -770,10 +727,9 @@ mod tests {
             )
             .unwrap(),
         };
-
+        let network_log_proof_rpc_response = network_log_proof.clone();
         run_server_and_test(
             |module| {
-                let network_log_proof_rpc_response = network_log_proof.clone();
                 module
                     .register_method::<RpcResult<Option<L2ToL1LogProof>>, _>(
                         "zks_getL2ToL1LogProof",
@@ -787,11 +743,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_log_proof = provider
                     .get_l2_to_l1_log_proof(tx_hash, index)
                     .await
@@ -824,11 +776,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_log_proof = provider
                     .get_l2_to_l1_log_proof(tx_hash, index)
                     .await
@@ -898,9 +846,9 @@ mod tests {
             protocol_version: Some("Version5".to_string()),
         });
 
+        let network_block_details_rpc_response = network_block_details.clone();
         run_server_and_test(
             |module| {
-                let network_block_details_rpc_response = network_block_details.clone();
                 module
                     .register_method::<RpcResult<Option<BlockDetails>>, _>(
                         "zks_getBlockDetails",
@@ -912,11 +860,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_block_details = provider.get_block_details(100).await.unwrap();
                 assert_eq!(received_block_details, network_block_details);
             },
@@ -926,29 +870,25 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn get_block_details_when_do_not_exist() {
-        let server = Server::builder()
-            .build("127.0.0.1:0".parse::<SocketAddr>().unwrap())
-            .await
-            .unwrap();
-        let mut module = RpcModule::new(());
-        module
-            .register_method::<RpcResult<Option<BlockDetails>>, _>(
-                "zks_getBlockDetails",
-                move |_, _, _| Ok(None),
-            )
-            .unwrap();
-
-        let server_addr: SocketAddr = server.local_addr().unwrap();
-        let handle = server.start(module);
-        let full_addr = format!("http://{}", server_addr);
-        tokio::spawn(handle.stopped());
-
-        let provider = zksync_provider()
-            .with_recommended_fillers()
-            .on_http(full_addr.parse().unwrap());
-
-        let received_block_details = provider.get_block_details(100).await.unwrap();
-        assert_eq!(received_block_details, None);
+        run_server_and_test(
+            |module| {
+                module
+                    .register_method::<RpcResult<Option<BlockDetails>>, _>(
+                        "zks_getBlockDetails",
+                        move |params, _, _| {
+                            let (block_number,) = params.parse::<(u64,)>().unwrap();
+                            assert_eq!(block_number, 100);
+                            Ok(None)
+                        },
+                    )
+                    .unwrap();
+            },
+            |provider: ZKsyncTestProvider| async move {
+                let received_block_details = provider.get_block_details(100).await.unwrap();
+                assert_eq!(None, received_block_details);
+            },
+        )
+        .await;
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -983,10 +923,9 @@ mod tests {
                 .unwrap(),
             ),
         });
-
+        let tx_details_rpc_response = tx_details.clone();
         run_server_and_test(
             |module| {
-                let tx_details_rpc_response = tx_details.clone();
                 module
                     .register_method::<RpcResult<Option<TransactionDetails>>, _>(
                         "zks_getTransactionDetails",
@@ -998,11 +937,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_tx_details = provider.get_transaction_details(tx_hash).await.unwrap();
                 assert_eq!(tx_details, received_tx_details);
             },
@@ -1028,11 +963,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_tx_details = provider.get_transaction_details(tx_hash).await.unwrap();
                 assert_eq!(received_tx_details, None);
             },
@@ -1201,10 +1132,9 @@ mod tests {
                 ),
             },
         ];
-
+        let block_txs_rpc_response = block_txs.clone();
         run_server_and_test(
             |module| {
-                let block_txs_rpc_response = block_txs.clone();
                 module
                     .register_method::<RpcResult<Vec<Transaction>>, _>(
                         "zks_getRawBlockTransactions",
@@ -1216,11 +1146,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_block_txs = provider
                     .get_raw_block_transactions(block_number)
                     .await
@@ -1287,10 +1213,9 @@ mod tests {
                 ),
             },
         });
-
+        let network_batch_details_rpc_response = network_batch_details.clone();
         run_server_and_test(
             |module| {
-                let network_batch_details_rpc_response = network_batch_details.clone();
                 module
                     .register_method::<RpcResult<Option<L1BatchDetails>>, _>(
                         "zks_getL1BatchDetails",
@@ -1302,11 +1227,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_batch_details =
                     provider.get_l1_batch_details(batch_number).await.unwrap();
                 assert_eq!(network_batch_details, received_batch_details);
@@ -1318,7 +1239,6 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn get_l1_batch_details_when_do_not_exist() {
         let batch_number = 6578_u64;
-
         run_server_and_test(
             |module| {
                 module
@@ -1332,11 +1252,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_batch_details =
                     provider.get_l1_batch_details(batch_number).await.unwrap();
                 assert_eq!(received_batch_details, None);
@@ -1354,10 +1270,9 @@ mod tests {
             Bytes::from_str("0x0100067d861e2f5717a12c3e869cfb657793b86bbb0caa05cc1421f16c5217bc")
                 .unwrap(),
         );
-
+        let network_tx_bytecode_rpc_response = network_tx_bytecode.clone();
         run_server_and_test(
             |module| {
-                let network_tx_bytecode_rpc_response = network_tx_bytecode.clone();
                 module
                     .register_method::<RpcResult<Option<Bytes>>, _>(
                         "zks_getBytecodeByHash",
@@ -1369,11 +1284,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_tx_bytecode = provider.get_bytecode_by_hash(tx_hash).await.unwrap();
                 assert_eq!(network_tx_bytecode, received_tx_bytecode);
             },
@@ -1399,11 +1310,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_tx_bytecode = provider.get_bytecode_by_hash(tx_hash).await.unwrap();
                 assert_eq!(received_tx_bytecode, None);
             },
@@ -1429,11 +1336,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_blocks_range = provider
                     .get_l1_batch_block_range(l1_batch_number)
                     .await
@@ -1461,11 +1364,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_blocks_range = provider
                     .get_l1_batch_block_range(l1_batch_number)
                     .await
@@ -1487,11 +1386,7 @@ mod tests {
                     })
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_l1_gas_price = provider.get_l1_gas_price().await.unwrap();
                 assert_eq!(network_l1_gas_price, received_l1_gas_price);
             },
@@ -1517,9 +1412,10 @@ mod tests {
                 denominator: 234344_u64,
             },
         });
+        let network_fee_params_rpc_response = network_fee_params.clone();
         run_server_and_test(
             |module| {
-                let network_fee_params_rpc_response = network_fee_params.clone();
+                
                 module
                     .register_method::<RpcResult<FeeParams>, _>(
                         "zks_getFeeParams",
@@ -1527,11 +1423,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_fee_params = provider.get_fee_params().await.unwrap();
                 assert_eq!(network_fee_params, received_fee_params);
             },
@@ -1592,9 +1484,9 @@ mod tests {
                 .unwrap(),
             ),
         });
+        let network_protocol_version_rpc_response = network_protocol_version.clone();
         run_server_and_test(
             |module| {
-                let network_protocol_version_rpc_response = network_protocol_version.clone();
                 module
                     .register_method::<RpcResult<Option<ProtocolVersion>>, _>(
                         "zks_getProtocolVersion",
@@ -1606,11 +1498,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_protocol_version =
                     provider.get_protocol_version(protocol_id).await.unwrap();
                 assert_eq!(network_protocol_version, received_protocol_version);
@@ -1631,11 +1519,7 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_protocol_version =
                     provider.get_protocol_version(protocol_id).await.unwrap();
                 assert_eq!(received_protocol_version, None);
@@ -1670,10 +1554,10 @@ mod tests {
                 index: 27900957_u64,
             }],
         });
+        let proof_rpc_response = proof.clone();
+        let keys_rpc_request = keys.clone();
         run_server_and_test(
             |module| {
-                let proof_rpc_response = proof.clone();
-                let keys_rpc_request = keys.clone();
                 module
                     .register_method::<RpcResult<Option<Proof>>, _>(
                         "zks_getProof",
@@ -1688,13 +1572,9 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_proof =
-                    ZksyncProvider::get_proof(&provider, address, keys.clone(), l1_batch_number)
+                    ZksyncProvider::get_proof(&provider, address, keys, l1_batch_number)
                         .await
                         .unwrap();
                 assert_eq!(proof, received_proof);
@@ -1711,9 +1591,9 @@ mod tests {
         )
         .unwrap()];
         let l1_batch_number = 354895_u64;
+        let keys_rpc_request = keys.clone();
         run_server_and_test(
             |module| {
-                let keys_rpc_request = keys.clone();
                 module
                     .register_method::<RpcResult<Option<Proof>>, _>(
                         "zks_getProof",
@@ -1728,13 +1608,9 @@ mod tests {
                     )
                     .unwrap();
             },
-            |http_url: reqwest::Url| async {
-                let provider = zksync_provider()
-                    .with_recommended_fillers()
-                    .on_http(http_url);
-
+            |provider: ZKsyncTestProvider| async move {
                 let received_proof =
-                    ZksyncProvider::get_proof(&provider, address, keys.clone(), l1_batch_number)
+                    ZksyncProvider::get_proof(&provider, address, keys, l1_batch_number)
                         .await
                         .unwrap();
                 assert_eq!(received_proof, None);

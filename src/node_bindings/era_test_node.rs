@@ -153,8 +153,7 @@ pub struct EraTestNode {
     // // which allows this to be backwards compatible.
     // block_time: Option<f64>,
     chain_id: Option<ChainId>,
-    // TODO
-    // mnemonic: Option<String>,
+    mnemonic: Option<String>,
     fork: Option<String>,
     fork_block_number: Option<u64>,
     args: Vec<String>,
@@ -220,12 +219,11 @@ impl EraTestNode {
         self
     }
 
-    // TODO
-    // /// Sets the mnemonic which will be used when the `era_test_node` instance is launched.
-    // pub fn mnemonic<T: Into<String>>(mut self, mnemonic: T) -> Self {
-    //     self.mnemonic = Some(mnemonic.into());
-    //     self
-    // }
+    /// Sets the mnemonic which will be used when the `era_test_node` instance is launched.
+    pub fn mnemonic<T: Into<String>>(mut self, mnemonic: T) -> Self {
+        self.mnemonic = Some(mnemonic.into());
+        self
+    }
 
     // TODO
     // /// Sets the block-time in seconds which will be used when the `era_test_node` instance is launched.
@@ -307,9 +305,9 @@ impl EraTestNode {
             cmd.arg("--port").arg(port.to_string());
         }
 
-        // if let Some(mnemonic) = self.mnemonic {
-        //     cmd.arg("-m").arg(mnemonic);
-        // }
+        if let Some(mnemonic) = self.mnemonic {
+            cmd.arg("-m").arg(mnemonic);
+        }
 
         if let Some(chain_id) = self.chain_id {
             cmd.arg("--chain-id").arg(chain_id.to_string());
@@ -367,9 +365,11 @@ impl EraTestNode {
                 break;
             }
 
-            if line.contains("Private Key: ") {
-                // Questionable but OK.
+            // Questionable but OK.
+            if line.contains("0x") && line.trim().len() == 66 {
+                // Private keys are 64 hex chars + "0x"
                 let key_str = line
+                    .trim()
                     .split("0x")
                     .last()
                     .ok_or(EraTestNodeError::ParsePrivateKeyError)?
@@ -383,34 +383,18 @@ impl EraTestNode {
                 private_keys.push(key);
             }
 
-            // if line.starts_with("Private Keys") {
-            //     is_private_key = true;
-            // }
-
-            // if is_private_key && line.starts_with('(') {
-            //     let key_str = line
-            //         .split("0x")
-            //         .last()
-            //         .ok_or(EraTestNodeError::ParsePrivateKeyError)?
-            //         .trim();
-            //     let key_hex = hex::decode(key_str).map_err(EraTestNodeError::FromHexError)?;
-            //     let key = K256SecretKey::from_bytes((&key_hex[..]).into())
-            //         .map_err(|_| EraTestNodeError::DeserializePrivateKeyError)?;
-            //     addresses.push(Address::from_public_key(
-            //         SigningKey::from(&key).verifying_key(),
-            //     ));
-            //     private_keys.push(key);
-            // }
-
-            if let Some(start_chain_id) = line.find("L2ChainId") {
-                // <Starting network with chain id: L2ChainId(260)>
-                // Account for parenthesis.
-                let start = start_chain_id + "L2ChainId".len() + 1;
-                let end = line.len() - 1;
-                let rest = &line[start..end];
-                if let Ok(chain) = rest.split_whitespace().next().unwrap_or("").parse::<u64>() {
-                    chain_id = Some(chain);
-                };
+            if line.contains("Chain ID:") {
+                if let Some(chain_str) = line.split(':').nth(1) {
+                    let chain_str = chain_str.trim();
+                    if let Ok(chain) = chain_str.parse::<u64>() {
+                        chain_id = Some(chain);
+                    } else {
+                        return Err(EraTestNodeError::ReadLineError(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            format!("Could not parse chain id: {}", chain_str),
+                        )));
+                    }
+                }
             }
         }
 
@@ -516,5 +500,38 @@ mod tests {
     fn assert_chain_id_without_rpc() {
         let era_test_node = EraTestNode::new().spawn();
         assert_eq!(era_test_node.chain_id(), 260);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_mnemonic_usage() {
+        let test_mnemonic = "test test test test test test test test test test test junk";
+
+        let era_test_node = EraTestNode::new().mnemonic(test_mnemonic).spawn();
+
+        let expected_addresses = vec![
+            "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+            "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+            "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+            "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+            "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+            "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+            "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        ];
+
+        let derived_addresses: Vec<_> = era_test_node
+            .addresses()
+            .iter()
+            .map(|address| format!("{:#x}", address))
+            .collect();
+
+        assert_eq!(
+            derived_addresses, expected_addresses,
+            "The derived addresses do not match the expected addresses"
+        );
+
+        drop(era_test_node);
     }
 }

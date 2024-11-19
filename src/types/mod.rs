@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Response type for `zks_estimateFee`.
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Eip712Fee {
     /// Amount of gas to be spent on the transaction.
     #[serde(with = "alloy::serde::quantity")]
@@ -20,7 +20,7 @@ pub struct Eip712Fee {
 }
 
 /// Response type for `zks_getBridgeContracts`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BridgeAddresses {
     pub l1_shared_default_bridge: Option<Address>,
@@ -32,14 +32,14 @@ pub struct BridgeAddresses {
     pub l2_legacy_shared_bridge: Option<Address>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BaseSystemContractsHashes {
     pub bootloader: B256,
     pub default_aa: B256,
     pub evm_emulator: Option<B256>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum BlockStatus {
     Sealed,
@@ -47,7 +47,7 @@ pub enum BlockStatus {
 }
 
 /// Response type for `zks_getBlockDetails`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockDetails {
     pub number: u64,
@@ -71,7 +71,7 @@ pub struct BlockDetails {
     pub base_system_contracts_hashes: BaseSystemContractsHashes,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum TransactionStatus {
     Pending,
@@ -81,7 +81,7 @@ pub enum TransactionStatus {
 }
 
 /// Response type for `zks_getTransactionDetails`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionDetails {
     pub is_l1_originated: bool,
@@ -89,14 +89,14 @@ pub struct TransactionDetails {
     pub fee: U256,
     pub gas_per_pubdata: U256,
     pub initiator_address: Address,
-    pub received_at: String,
+    pub received_at: DateTime<Utc>,
     pub eth_commit_tx_hash: Option<B256>,
     pub eth_prove_tx_hash: Option<B256>,
     pub eth_execute_tx_hash: Option<B256>,
 }
 
 /// Response type for `zks_getL1BatchDetails`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct L1BatchDetails {
     pub number: u64,
@@ -117,7 +117,7 @@ pub struct L1BatchDetails {
     pub base_system_contracts_hashes: BaseSystemContractsHashes,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FeeModelConfigV2 {
     pub minimal_l2_gas_price: U256,
     pub compute_overhead_part: f64,
@@ -127,33 +127,33 @@ pub struct FeeModelConfigV2 {
     pub max_pubdata_per_batch: U256,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BaseTokenConversionRatio {
     pub numerator: u64,
     pub denominator: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FeeParamsV2 {
-    config: FeeModelConfigV2,
-    l1_gas_price: U256,
-    l1_pubdata_price: U256,
-    conversion_ratio: BaseTokenConversionRatio,
+    pub config: FeeModelConfigV2,
+    pub l1_gas_price: U256,
+    pub l1_pubdata_price: U256,
+    pub conversion_ratio: BaseTokenConversionRatio,
 }
 
 /// Response type for `zks_getFeeParams`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum FeeParams {
     V2(FeeParamsV2),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct L1VerifierConfig {
     pub recursion_scheduler_level_vk_hash: B256,
 }
 
 /// Response type for `zks_getProtocolVersion`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProtocolVersion {
     #[serde(rename = "minorVersion")]
     pub minor_version: Option<u16>,
@@ -170,7 +170,7 @@ pub struct ProtocolVersion {
     pub l2_system_upgrade_tx_hash: Option<B256>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StorageProof {
     pub key: B256,
     pub proof: Vec<B256>,
@@ -179,7 +179,7 @@ pub struct StorageProof {
 }
 
 /// Response type for `zks_getProof`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Proof {
     pub address: Address,
@@ -214,7 +214,7 @@ pub struct Log {
 }
 
 /// Response type for `zks_getL2ToL1LogProof`.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct L2ToL1LogProof {
     /// The merkle path for the leaf.
@@ -225,7 +225,7 @@ pub struct L2ToL1LogProof {
     pub root: B256,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Execute {
     pub contract_address: Option<Address>,
@@ -235,20 +235,20 @@ pub struct Execute {
     pub factory_deps: Vec<Bytes>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct InputData {
     pub hash: B256,
     pub data: Bytes,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[repr(u8)]
 pub enum OpProcessingType {
     Common = 0,
     OnlyRollup = 1,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[repr(u8)]
 pub enum PriorityQueueType {
     #[default]
@@ -257,7 +257,7 @@ pub enum PriorityQueueType {
     Heap = 2,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct L1TxCommonData {
     /// Sender of the transaction.
     pub sender: Address,
@@ -285,7 +285,7 @@ pub struct L1TxCommonData {
     pub refund_recipient: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct L2TxCommonData {
     pub nonce: u32,
@@ -297,7 +297,7 @@ pub struct L2TxCommonData {
     pub paymaster_params: PaymasterParams,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ProtocolUpgradeTxCommonData {
     /// Sender of the transaction.
     pub sender: Address,
@@ -319,14 +319,14 @@ pub struct ProtocolUpgradeTxCommonData {
     pub refund_recipient: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum ExecuteTransactionCommon {
     L1(L1TxCommonData),
     L2(L2TxCommonData),
     ProtocolUpgrade(ProtocolUpgradeTxCommonData),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Transaction {
     pub common_data: ExecuteTransactionCommon,
     pub execute: Execute,

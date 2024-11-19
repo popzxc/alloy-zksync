@@ -258,7 +258,7 @@ mod tests {
     }
 
     async fn run_server_and_test<Fut>(
-        register_rpc_module_fn: impl Fn(&mut RpcModule<()>) -> (),
+        register_rpc_module_fn: impl Fn(&mut RpcModule<()>),
         test_fn: impl Fn(reqwest::Url) -> Fut,
     ) where
         Fut: Future<Output = ()>,

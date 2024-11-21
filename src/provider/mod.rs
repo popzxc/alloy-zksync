@@ -310,7 +310,7 @@ where
     /// - `address`: account address to fetch storage values and proofs for.
     /// - `keys`: the keys in the account.
     /// - `l1_batch_number`: number of the L1 batch specifying the point in time at which the requested values are returned.
-    /// 
+    ///
     /// # Returns
     ///
     /// The account details and proofs for storage keys.

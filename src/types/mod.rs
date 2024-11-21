@@ -245,7 +245,7 @@ pub struct StorageProof {
     /// Storage key for which the proof is provided.
     pub key: B256,
     /// Hashes that constitute the Merkle path from the leaf node (representing the storage key-value pair) to the root of the Merkle tree.
-    /// The path is ordered from the root to the leaf. 
+    /// The path is ordered from the root to the leaf.
     /// The root hash itself is not included in this array because it is published on L1 as part of the L1 batch commit data.
     pub proof: Vec<B256>,
     /// Value stored in the specified storage key at the time of the specified l1BatchNumber.

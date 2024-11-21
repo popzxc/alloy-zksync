@@ -4,7 +4,7 @@ use alloy::primitives::Address;
 
 use crate::network::{tx_envelope::TxEnvelope, unsigned_tx::TypedTransaction, Zksync};
 
-use alloy::signers::Signature;
+use alloy::primitives::PrimitiveSignature as Signature;
 use std::{collections::BTreeMap, sync::Arc};
 
 /// A wallet capable of signing any transaction for the Ethereum network.

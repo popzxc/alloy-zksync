@@ -1,8 +1,8 @@
 use alloy::consensus::{SignableTransaction, Signed, Transaction};
+use alloy::primitives::PrimitiveSignature as Signature;
 use alloy::primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
 use alloy::rlp::{BufMut, Decodable, Encodable, Header};
 use alloy::rpc::types::TransactionInput;
-use alloy::signers::Signature;
 use serde::{Deserialize, Serialize};
 
 use crate::network::tx_type::TxType;
@@ -151,7 +151,7 @@ impl TxEip712 {
         let to = Decodable::decode(buf)?;
         let value = Decodable::decode(buf)?;
         let input = Decodable::decode(buf)?;
-        let signature = Signature::decode_rlp_vrs(buf)?;
+        let signature = Signature::decode_rlp_vrs(buf, bool::decode)?;
         let chain_id = Decodable::decode(buf)?;
         let from = Decodable::decode(buf)?;
         let eip712_meta = Decodable::decode(buf)?;
@@ -200,7 +200,7 @@ impl TxEip712 {
     ///
     /// This __does__ encode a list header and include a signature.
     pub(crate) fn encode_with_signature_fields(&self, signature: &Signature, out: &mut dyn BufMut) {
-        let payload_length = self.fields_len() + signature.rlp_vrs_len();
+        let payload_length = self.fields_len() + signature.rlp_rs_len() + signature.v().length();
         let header = Header {
             list: true,
             payload_length,
@@ -214,10 +214,18 @@ impl TxEip712 {
         self.to.encode(out);
         self.value.encode(out);
         self.input.0.encode(out);
-        signature.write_rlp_vrs(out);
+        signature.write_rlp_vrs(out, signature.v());
         self.chain_id.encode(out);
         self.from.encode(out);
         self.eip712_meta.encode(out);
+    }
+
+    /// Gets the length of the encoded header.
+    pub(crate) fn encoded_length(&self, signature: &Signature) -> usize {
+        let payload_length = self.fields_len() + signature.rlp_rs_len();
+        let x = alloy::rlp::length_of_length(payload_length) + payload_length;
+        println!("!!! LEN {x}");
+        x
     }
 
     /// Get transaction type
@@ -305,6 +313,14 @@ impl Transaction for TxEip712 {
     fn kind(&self) -> TxKind {
         self.to.into()
     }
+
+    fn effective_gas_price(&self, base_fee: Option<u64>) -> u128 {
+        self.effective_gas_price(base_fee)
+    }
+
+    fn is_dynamic_fee(&self) -> bool {
+        false
+    }
 }
 
 // Context: Encodable/Decodable assume that there is no signature in the transaction
@@ -330,7 +346,7 @@ impl SignableTransaction<Signature> for TxEip712 {
         // Drop any v chain id value to ensure the signature format is correct at the time of
         // combination for an EIP-1559 transaction. V should indicate the y-parity of the
         // signature.
-        let signature = signature.with_parity_bool();
+        let signature = signature.with_parity(true);
 
         let mut buf = [0u8; 64];
         buf[..32].copy_from_slice(self.signature_hash().as_slice());
@@ -409,7 +425,9 @@ mod tests {
     use super::TxEip712;
     use alloy::consensus::SignableTransaction;
     use alloy::hex::FromHex;
-    use alloy::primitives::{address, hex, Address, Bytes, FixedBytes, Signature, B256, U256};
+    use alloy::primitives::{
+        address, hex, Address, Bytes, FixedBytes, PrimitiveSignature as Signature, B256, U256,
+    };
 
     #[test]
     fn decode_eip712_tx() {
@@ -496,7 +514,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eip712_tx() {
+    fn test_eip712_tx1() {
         let eip712_meta = Eip712Meta {
             gas_per_pubdata: U256::from(4),
             factory_deps: vec![vec![2; 32].into()],

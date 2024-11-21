@@ -219,9 +219,9 @@ where
 }
 
 impl RecommendedFillers for Zksync {
-    type RecomendedFillers = JoinFill<Eip712FeeFiller, JoinFill<NonceFiller, ChainIdFiller>>;
+    type RecommendedFillers = JoinFill<Eip712FeeFiller, JoinFill<NonceFiller, ChainIdFiller>>;
 
-    fn recommended_fillers() -> Self::RecomendedFillers {
+    fn recommended_fillers() -> Self::RecommendedFillers {
         JoinFill::new(
             Eip712FeeFiller::default(),
             JoinFill::new(NonceFiller::default(), ChainIdFiller::default()),

@@ -96,7 +96,7 @@ pub struct BlockDetails {
     pub l2_fair_gas_price: U256,
     /// Cost of publishing one byte (in wei).
     pub fair_pubdata_price: Option<U256>,
-    /// Hashes for the base system contracts.
+    /// Hashes for the base system contracts used for block execution.
     pub base_system_contracts_hashes: BaseSystemContractsHashes,
 }
 

@@ -78,17 +78,17 @@ pub struct BlockDetails {
     pub root_hash: Option<B256>,
     /// Current status of the block: verified or sealed.
     pub status: BlockStatus,
-    /// Transaction hash of the commit operation on L1.
+    /// Transaction hash of the commit operation on L1 for the batch containing this L2 block.
     pub commit_tx_hash: Option<B256>,
-    /// Timestamp when the block was committed on L1.
+    /// Timestamp when the batch containing this L2 block was committed on L1.
     pub committed_at: Option<DateTime<Utc>>,
-    /// Transaction hash of the proof submission on L1.
+    /// Transaction hash of the proof submission on L1 for the batch containing this L2 block.
     pub prove_tx_hash: Option<B256>,
-    /// Timestamp when the proof was submitted on L1.
+    /// Timestamp when the proof was submitted on L1 for the batch containing this L2 block.
     pub proven_at: Option<DateTime<Utc>>,
-    /// Transaction hash of the execution on L1.
+    /// Transaction hash of the execution on L1 for the batch containing this L2 block.
     pub execute_tx_hash: Option<B256>,
-    /// Timestamp when the block execution was completed on L1.
+    /// Timestamp when the execution was completed on L1 for the batch containing this L2 block.
     pub executed_at: Option<DateTime<Utc>>,
     /// L1 gas price at the time of the block's execution.
     pub l1_gas_price: U256,

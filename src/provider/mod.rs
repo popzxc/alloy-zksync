@@ -83,13 +83,13 @@ where
     }
 
     /// Gets all account balances for a given address.
-    /// 
+    ///
     /// ## Parameters
     ///
     /// - `address`: an account address.
     ///
     /// ## Returns
-    /// 
+    ///
     /// A hashmap with token addresses as keys and their corresponding balances as values.
     /// Each key-value pair represents the balance of a specific token held by the account.
     fn get_all_account_balances(
@@ -102,7 +102,7 @@ where
     }
 
     /// Retrieves the proof for an L2 to L1 message.
-    /// 
+    ///
     /// ## Parameters
     ///
     /// - `block_number`: the block number where the message was emitted.
@@ -126,7 +126,7 @@ where
     }
 
     /// Retrieves the log proof for an L2 to L1 transaction.
-    /// 
+    ///
     /// # Parameters
     ///
     /// - `tx_hash`: hash of the L2 transaction the L2 to L1 log was produced in.
@@ -221,7 +221,7 @@ where
 
     /// Generates Merkle proofs for one or more storage values associated with a specific account,
     /// accompanied by a proof of their authenticity. It verifies that these values remain unaltered.
-    /// 
+    ///
     /// ## Parameters
     ///
     /// - `address`: account address to fetch storage values and proofs for.

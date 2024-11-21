@@ -94,8 +94,10 @@ impl Encodable for Eip712Meta {
 #[derive(Default, Serialize, Deserialize, Clone, PartialEq, Debug, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct PaymasterParams {
+    /// Address of the paymaster.
     pub paymaster: Address,
-    /// A custom serialization is needed (otherwise RLP treats it as string).
+    /// Paymaster input.
+    // A custom serialization is needed (otherwise RLP treats it as string).
     #[serde(serialize_with = "serialize_bytes_custom")]
     pub paymaster_input: Bytes,
 }

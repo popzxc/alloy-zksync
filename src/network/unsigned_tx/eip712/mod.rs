@@ -507,7 +507,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eip712_tx1() {
+    fn test_eip712_tx() {
         let eip712_meta = Eip712Meta {
             gas_per_pubdata: U256::from(4),
             factory_deps: vec![vec![2; 32].into()],

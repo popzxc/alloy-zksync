@@ -68,13 +68,13 @@ pub struct BlockDetails {
     pub operator_address: Address,
     /// Version of the ZKsync protocol the block was committed under.
     pub protocol_version: Option<String>,
-    /// Unix timestamp when the block was committed.
+    /// Unix timestamp of when the first transaction in the block was processed (i.e., when the block was opened).
     pub timestamp: u64,
     /// Number of L1 transactions included in the block.
     pub l1_tx_count: u64,
     /// Number of L2 transactions included in the block.
     pub l2_tx_count: u64,
-    /// Root hash of the block's state after execution.
+    /// Hash of the L2 block.
     pub root_hash: Option<B256>,
     /// Current status of the block: verified or sealed.
     pub status: BlockStatus,
@@ -301,7 +301,7 @@ pub struct Log {
     pub log_type: Option<String>,
     /// True when the log was removed, false if it's a valid log.
     pub removed: Option<bool>,
-    /// Unix timestamp when the block was committed.
+    /// Unix timestamp of when the first transaction in the block was processed (i.e., when the block was opened).
     pub block_timestamp: Option<U64>,
 }
 

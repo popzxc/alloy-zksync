@@ -24,17 +24,11 @@ where
     T: Transport + Clone,
 {
     /// Gets the address of the main ZKsync contract on L1.
-    /// # Returns
-    ///
-    /// The address of the main ZKsync Era contract.
     fn get_main_contract(&self) -> ProviderCall<T, NoParams, Address> {
         self.client().request_noparams("zks_getMainContract").into()
     }
 
     /// Gets the address of the testnet paymaster ZKsync contract on L2, if it's present on the network.
-    /// # Returns
-    ///
-    /// The address of the testnet paymaster if it's set.
     fn get_testnet_paymaster(&self) -> ProviderCall<T, NoParams, Option<Address>> {
         self.client()
             .request_noparams("zks_getTestnetPaymaster")
@@ -42,29 +36,16 @@ where
     }
 
     /// Gets the L1 Chain ID.
-    /// # Returns
-    ///
-    /// The L1 chain ID.
     fn get_l1_chain_id(&self) -> ProviderCall<T, NoParams, U64> {
         self.client().request_noparams("zks_L1ChainId").into()
     }
 
-    /// Gets the L1 batch number.
-    /// # Returns
-    ///
-    /// The latest L1 batch number.
+    /// Gets the latest L1 batch number.
     fn get_l1_batch_number(&self) -> ProviderCall<T, NoParams, U64> {
         self.client().request_noparams("zks_L1BatchNumber").into()
     }
 
     /// Estimates transaction gas for a transaction.
-    /// # Parameters
-    ///
-    /// - `tx`: transaction request.
-    ///
-    /// # Returns
-    ///
-    /// The estimated transaction fee.
     fn estimate_fee(
         &self,
         tx: TransactionRequest,
@@ -73,13 +54,6 @@ where
     }
 
     /// Estimates the gas required for an L1 to L2 transaction.
-    /// # Parameters
-    ///
-    /// - `tx`: transaction request.
-    ///
-    /// # Returns
-    ///
-    /// The estimate of the gas required for a L1 to L2 transaction.
     fn estimate_gas_l1_to_l2(
         &self,
         tx: TransactionRequest,
@@ -88,9 +62,6 @@ where
     }
 
     /// Retrieves the bridge hub contract address.
-    /// # Returns
-    ///
-    /// The bridge hub contract address.
     fn get_bridgehub_contract(&self) -> ProviderCall<T, NoParams, Option<Address>> {
         self.client()
             .request_noparams("zks_getBridgehubContract")
@@ -98,9 +69,6 @@ where
     }
 
     /// Retrieves the addresses of canonical bridge contracts for ZKsync Era.
-    /// # Returns
-    ///
-    /// The default bridges used in the ZKsync network.
     fn get_bridge_contracts(&self) -> ProviderCall<T, NoParams, BridgeAddresses> {
         self.client()
             .request_noparams("zks_getBridgeContracts")
@@ -108,9 +76,6 @@ where
     }
 
     /// Retrieves the L1 base token address.
-    /// # Returns
-    ///
-    /// The address of the base token on L1.
     fn get_base_token_l1_address(&self) -> ProviderCall<T, NoParams, Address> {
         self.client()
             .request_noparams("zks_getBaseTokenL1Address")
@@ -118,11 +83,13 @@ where
     }
 
     /// Gets all account balances for a given address.
-    /// # Parameters
+    /// 
+    /// ## Parameters
     ///
     /// - `address`: an account address.
     ///
-    /// # Returns
+    /// ## Returns
+    /// 
     /// A hashmap with token addresses as keys and their corresponding balances as values.
     /// Each key-value pair represents the balance of a specific token held by the account.
     fn get_all_account_balances(
@@ -135,16 +102,14 @@ where
     }
 
     /// Retrieves the proof for an L2 to L1 message.
-    /// # Parameters
+    /// 
+    /// ## Parameters
     ///
     /// - `block_number`: the block number where the message was emitted.
     /// - `sender`: The sender of the message.
     /// - `msg`: The keccak256 hash of the sent message.
     /// - `l2_log_position`:  Optional: The index in the block of the event that was emitted by the L1Messenger when submitting this message.
     /// If it is omitted, the proof for the first message is returned.
-    ///
-    /// # Returns
-    /// The L2 to L1 message proof.
     fn get_l2_to_l1_msg_proof(
         &self,
         block_number: u64,
@@ -161,13 +126,11 @@ where
     }
 
     /// Retrieves the log proof for an L2 to L1 transaction.
+    /// 
     /// # Parameters
     ///
     /// - `tx_hash`: hash of the L2 transaction the L2 to L1 log was produced in.
     /// - `l2_to_l1_log_index`: Optional: The index of the L2 to L1 log in the transaction.
-    ///
-    /// # Returns
-    /// The L2 to L1 log proof.
     fn get_l2_to_l1_log_proof(
         &self,
         tx_hash: B256,
@@ -178,13 +141,7 @@ where
             .into()
     }
 
-    /// Retrieves details for a given block.
-    /// # Parameters
-    ///
-    /// - `block_number`: The number of the block.
-    ///
-    /// # Returns
-    /// The details of the L2 block.
+    /// Retrieves details for a given L2 block.
     fn get_block_details(
         &self,
         block_number: u64,
@@ -195,12 +152,6 @@ where
     }
 
     /// Retrieves details for a given transaction.
-    /// # Parameters
-    ///
-    /// - `tx_hash`: hash of the transaction.
-    ///
-    /// # Returns
-    /// The details of the transaction.
     fn get_transaction_details(
         &self,
         tx_hash: B256,
@@ -212,12 +163,6 @@ where
 
     /// Lists transactions in a native encoding (e.g. that has more details, but does not
     /// adhere to the "common" Web3 Transaction interface).
-    /// # Parameters
-    ///
-    /// - `block_number`: number of the block.
-    ///
-    /// # Returns
-    /// The list of the block transactions in a native encoding.
     fn get_raw_block_transactions(
         &self,
         block_number: u64,
@@ -228,12 +173,6 @@ where
     }
 
     /// Retrieves details for a given L1 batch.
-    /// # Parameters
-    ///
-    /// - `l1_batch_number`: L1 batch number.
-    ///
-    /// # Returns
-    /// The Detailed information about the specified L1 batch.
     fn get_l1_batch_details(
         &self,
         l1_batch_number: u64,
@@ -244,12 +183,6 @@ where
     }
 
     /// Retrieves the bytecode of a transaction by its hash.
-    /// # Parameters
-    ///
-    /// - `tx_hash`: hash of the transaction.
-    ///
-    /// # Returns
-    /// The transaction's bytecode.
     fn get_bytecode_by_hash(&self, tx_hash: B256) -> ProviderCall<T, (B256,), Option<Bytes>> {
         self.client()
             .request("zks_getBytecodeByHash", (tx_hash,))
@@ -257,12 +190,6 @@ where
     }
 
     /// Returns the range of blocks contained within a batch given by the batch number.
-    /// # Parameters
-    ///
-    /// - `l1_batch_number`: L1 batch number.
-    ///
-    /// # Returns
-    /// Tuple with the beginning and end block numbers.
     fn get_l1_batch_block_range(
         &self,
         l1_batch_number: u64,
@@ -273,27 +200,16 @@ where
     }
 
     /// Retrieves the current L1 gas price.
-    /// # Returns
-    /// Current L1 gas price, representing the amount of wei per unit of gas.
     fn get_l1_gas_price(&self) -> ProviderCall<T, NoParams, U256> {
         self.client().request_noparams("zks_getL1GasPrice").into()
     }
 
     /// Retrieves the current fee parameters.
-    /// # Returns
-    /// Current fee parameters of the network.
     fn get_fee_params(&self) -> ProviderCall<T, NoParams, FeeParams> {
         self.client().request_noparams("zks_getFeeParams").into()
     }
 
     /// Gets the protocol version.
-    /// # Parameters
-    ///
-    /// - `version_id`: Optional: specific version ID.
-    ///
-    /// # Returns
-    ///
-    /// Protocol version information.
     fn get_protocol_version(
         &self,
         version_id: Option<u16>,
@@ -305,13 +221,14 @@ where
 
     /// Generates Merkle proofs for one or more storage values associated with a specific account,
     /// accompanied by a proof of their authenticity. It verifies that these values remain unaltered.
-    /// # Parameters
+    /// 
+    /// ## Parameters
     ///
     /// - `address`: account address to fetch storage values and proofs for.
     /// - `keys`: the keys in the account.
     /// - `l1_batch_number`: number of the L1 batch specifying the point in time at which the requested values are returned.
     ///
-    /// # Returns
+    /// ## Returns
     ///
     /// The account details and proofs for storage keys.
     fn get_proof(

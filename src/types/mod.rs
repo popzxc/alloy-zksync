@@ -200,6 +200,7 @@ pub struct FeeParamsV2 {
     pub l1_gas_price: U256,
     /// Price of storing public data on L1.
     pub l1_pubdata_price: U256,
+    /// BaseToken<->ETH conversion ratio.
     pub conversion_ratio: BaseTokenConversionRatio,
 }
 
@@ -225,10 +226,13 @@ pub struct ProtocolVersion {
     pub verification_keys_hashes: Option<L1VerifierConfig>,
     /// Hashes of the base system contracts.
     pub base_system_contracts: Option<BaseSystemContractsHashes>,
+    /// Bootloader code hash.
     #[serde(rename = "bootloaderCodeHash")]
     pub bootloader_code_hash: Option<B256>,
+    /// Default account code hash.
     #[serde(rename = "defaultAccountCodeHash")]
     pub default_account_code_hash: Option<B256>,
+    /// EVM emulator code hash.
     #[serde(rename = "evmSimulatorCodeHash")]
     pub evm_emulator_code_hash: Option<B256>,
     /// Hash of the transaction used for the system upgrade

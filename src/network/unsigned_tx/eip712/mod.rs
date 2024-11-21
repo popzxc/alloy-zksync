@@ -222,10 +222,7 @@ impl TxEip712 {
 
     /// Gets the length of the encoded header.
     pub(crate) fn encoded_length(&self, signature: &Signature) -> usize {
-        let payload_length = self.fields_len() + signature.rlp_rs_len();
-        let x = alloy::rlp::length_of_length(payload_length) + payload_length;
-        println!("!!! LEN {x}");
-        x
+        alloy::rlp::length_of_length(payload_length) + payload_length
     }
 
     /// Get transaction type

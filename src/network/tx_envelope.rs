@@ -1,6 +1,6 @@
 use alloy::consensus::Signed;
 use alloy::network::eip2718::{Decodable2718, Encodable2718};
-use alloy::rlp::Header;
+use alloy::rlp::{Encodable, Header};
 use serde::{Deserialize, Serialize};
 
 use super::unsigned_tx::eip712::TxEip712;
@@ -188,7 +188,9 @@ impl Encodable2718 for TxEnvelope {
         match self {
             Self::Native(inner) => inner.encode_2718_len(),
             Self::Eip712(inner) => {
-                let payload_length = inner.tx().fields_len() + inner.signature().rlp_rs_len();
+                let payload_length = inner.tx().fields_len()
+                    + inner.signature().rlp_rs_len()
+                    + inner.signature().v().length();
                 Header {
                     list: true,
                     payload_length,

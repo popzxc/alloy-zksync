@@ -341,11 +341,6 @@ impl SignableTransaction<Signature> for TxEip712 {
     }
 
     fn into_signed(self, signature: Signature) -> Signed<Self> {
-        // Drop any v chain id value to ensure the signature format is correct at the time of
-        // combination for an EIP-1559 transaction. V should indicate the y-parity of the
-        // signature.
-        let signature = signature.with_parity(true);
-
         let mut buf = [0u8; 64];
         buf[..32].copy_from_slice(self.signature_hash().as_slice());
         buf[32..].copy_from_slice(keccak256(signature.as_bytes()).as_slice());

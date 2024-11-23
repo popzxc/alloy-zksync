@@ -1,11 +1,16 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Header {
     #[serde(flatten)]
     inner: alloy::consensus::Header,
 }
 
+impl Header {
+    pub fn hash_slow(&self) -> alloy::primitives::B256 {
+        self.inner.hash_slow()
+    }
+}
 impl alloy::consensus::BlockHeader for Header {
     fn parent_hash(&self) -> alloy::primitives::B256 {
         self.inner.parent_hash()
@@ -59,11 +64,11 @@ impl alloy::consensus::BlockHeader for Header {
         self.inner.timestamp()
     }
 
-    fn mix_hash(&self) -> alloy::primitives::B256 {
+    fn mix_hash(&self) -> Option<alloy::primitives::B256> {
         self.inner.mix_hash()
     }
 
-    fn nonce(&self) -> alloy::primitives::B64 {
+    fn nonce(&self) -> Option<alloy::primitives::B64> {
         self.inner.nonce()
     }
 

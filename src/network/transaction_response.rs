@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionResponse {
     #[serde(flatten)]
-    inner: alloy::rpc::types::Transaction,
+    inner: alloy::rpc::types::transaction::Transaction<crate::network::tx_envelope::TxEnvelope>,
 }
 
 impl alloy::consensus::Transaction for TransactionResponse {
@@ -70,6 +70,14 @@ impl alloy::consensus::Transaction for TransactionResponse {
     fn kind(&self) -> alloy::primitives::TxKind {
         self.inner.kind()
     }
+
+    fn effective_gas_price(&self, base_fee: Option<u64>) -> u128 {
+        self.inner.effective_gas_price(base_fee)
+    }
+
+    fn is_dynamic_fee(&self) -> bool {
+        self.inner.is_dynamic_fee()
+    }
 }
 
 impl alloy::network::TransactionResponse for TransactionResponse {
@@ -95,5 +103,11 @@ impl alloy::network::TransactionResponse for TransactionResponse {
 
     fn transaction_index(&self) -> Option<u64> {
         self.inner.transaction_index()
+    }
+}
+
+impl AsRef<crate::network::tx_envelope::TxEnvelope> for TransactionResponse {
+    fn as_ref(&self) -> &crate::network::tx_envelope::TxEnvelope {
+        &self.inner.inner
     }
 }

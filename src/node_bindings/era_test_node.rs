@@ -18,7 +18,7 @@ use thiserror::Error;
 use url::Url;
 
 /// How long we will wait for era_test_node to indicate that it is ready.
-const ERA_TEST_NODE_STARTUP_TIMEOUT_MILLIS: u64 = 10_000;
+const ERA_TEST_NODE_STARTUP_TIMEOUT_MILLIS: u64 = 30_000;
 
 /// An era_test_node CLI instance. Will close the instance when dropped.
 ///
@@ -322,7 +322,7 @@ impl EraTestNode {
         cmd.args(self.args);
 
         if let Some(fork) = self.fork {
-            cmd.arg("fork").arg(fork);
+            cmd.arg("fork").arg("--network").arg(fork);
             if let Some(fork_block_number) = self.fork_block_number {
                 println!("fork_block_number ln 312: {}", fork_block_number);
                 cmd.arg("--fork-block-number")
@@ -358,7 +358,7 @@ impl EraTestNode {
                 .read_line(&mut line)
                 .map_err(EraTestNodeError::ReadLineError)?;
             tracing::trace!(target: "era_test_node", line);
-            if let Some(addr) = line.trim().split("Node is ready at").nth(1) {
+            if let Some(addr) = line.trim().split("Listening on").nth(1) {
                 // <Node is ready at 127.0.0.1:8011>
                 // parse the actual port
                 port = SocketAddr::from_str(addr.trim())

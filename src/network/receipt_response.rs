@@ -1,21 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-use alloy::consensus::TxReceipt;
+use alloy::consensus::{AnyReceiptEnvelope, TxReceipt};
 use alloy::primitives::{Address, B256, U64};
 use alloy::rpc::types::{Log, TransactionReceipt};
 
-use super::receipt_envelope::ReceiptEnvelope;
 use crate::types::*;
+//use super::receipt_envelope::ReceiptEnvelope;
 use alloy::eips::eip7702::SignedAuthorization;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ReceiptResponse<T = ReceiptEnvelope<Log>> {
+pub struct ReceiptResponse<T = AnyReceiptEnvelope<Log>> {
     #[serde(flatten)]
     inner: TransactionReceipt<T>,
 
-    l1_batch_number: U64,
-    l1_batch_tx_index: U64,
+    l1_batch_number: Option<U64>,
+    l1_batch_tx_index: Option<U64>,
     l2_to_l1_logs: Vec<L2ToL1Log>,
 }
 
@@ -26,10 +26,10 @@ impl ReceiptResponse {
     pub fn logs_bloom(&self) -> alloy::primitives::Bloom {
         self.inner.inner.bloom()
     }
-    pub fn l1_batch_number(&self) -> U64 {
+    pub fn l1_batch_number(&self) -> Option<U64> {
         self.l1_batch_number
     }
-    pub fn l1_batch_tx_index(&self) -> U64 {
+    pub fn l1_batch_tx_index(&self) -> Option<U64> {
         self.l1_batch_tx_index
     }
     pub fn l2_to_l1_logs(&self) -> &[L2ToL1Log] {
@@ -207,8 +207,8 @@ mod tests {
         "#;
 
         let receipt = serde_json::from_str::<ReceiptResponse>(receipt_json).unwrap();
-        assert_eq!(receipt.l1_batch_number(), U64::from(0x72ae1));
-        assert_eq!(receipt.l1_batch_tx_index(), U64::from(0x469));
+        assert_eq!(receipt.l1_batch_number(), Some(U64::from(0x72ae1)));
+        assert_eq!(receipt.l1_batch_tx_index(), Some(U64::from(0x469)));
         assert_eq!(
             receipt.l2_to_l1_logs(),
             vec![L2ToL1Log {

@@ -305,6 +305,24 @@ pub struct Log {
     pub block_timestamp: Option<U64>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct L2ToL1Log {
+    pub block_hash: Option<B256>,
+    pub block_number: U64,
+    pub l1_batch_number: Option<U64>,
+    pub log_index: U256,
+    pub transaction_index: U64,
+    pub transaction_hash: B256,
+    pub transaction_log_index: U256,
+    pub tx_index_in_l1_batch: Option<U64>,
+    pub shard_id: U64,
+    pub is_service: bool,
+    pub sender: Address,
+    pub key: B256,
+    pub value: B256,
+}
+
 /// Response type for `zks_getL2ToL1LogProof` and `zks_getL2ToL1MsgProof`.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]

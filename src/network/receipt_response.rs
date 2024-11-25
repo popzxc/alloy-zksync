@@ -1,16 +1,16 @@
 use serde::{Deserialize, Serialize};
 
-use alloy::consensus::{AnyReceiptEnvelope, TxReceipt};
-use alloy::primitives::{Address, B256, U64};
+use alloy::consensus::TxReceipt;
+use alloy::primitives::{Address, BlockHash, Bloom, TxHash, B256, U64};
 use alloy::rpc::types::{Log, TransactionReceipt};
 
+use super::receipt_envelope::ReceiptEnvelope;
 use crate::types::*;
-//use super::receipt_envelope::ReceiptEnvelope;
 use alloy::eips::eip7702::SignedAuthorization;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ReceiptResponse<T = AnyReceiptEnvelope<Log>> {
+pub struct ReceiptResponse<T = ReceiptEnvelope<Log>> {
     #[serde(flatten)]
     inner: TransactionReceipt<T>,
 
@@ -23,7 +23,7 @@ impl ReceiptResponse {
     pub fn logs(&self) -> &[Log] {
         self.inner.inner.logs()
     }
-    pub fn logs_bloom(&self) -> alloy::primitives::Bloom {
+    pub fn logs_bloom(&self) -> Bloom {
         self.inner.inner.bloom()
     }
     pub fn l1_batch_number(&self) -> Option<U64> {
@@ -49,7 +49,7 @@ impl<T: TxReceipt<Log>> alloy::network::ReceiptResponse for ReceiptResponse<T> {
     }
 
     /// Hash of the block this transaction was included within.
-    fn block_hash(&self) -> Option<alloy::primitives::BlockHash> {
+    fn block_hash(&self) -> Option<BlockHash> {
         self.inner.block_hash()
     }
 
@@ -59,7 +59,7 @@ impl<T: TxReceipt<Log>> alloy::network::ReceiptResponse for ReceiptResponse<T> {
     }
 
     /// Transaction Hash.
-    fn transaction_hash(&self) -> alloy::primitives::TxHash {
+    fn transaction_hash(&self) -> TxHash {
         self.inner.transaction_hash()
     }
 

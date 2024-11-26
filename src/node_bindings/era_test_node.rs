@@ -148,10 +148,9 @@ pub enum EraTestNodeError {
 pub struct EraTestNode {
     program: Option<PathBuf>,
     port: Option<u16>,
-    // TODO
-    // // If the block_time is an integer, f64::to_string() will output without a decimal point
-    // // which allows this to be backwards compatible.
-    // block_time: Option<f64>,
+    // If the block_time is an integer, f64::to_string() will output without a decimal point
+    // which allows this to be backwards compatible.
+    block_time: Option<f64>,
     chain_id: Option<ChainId>,
     // TODO
     // mnemonic: Option<String>,
@@ -227,12 +226,11 @@ impl EraTestNode {
     //     self
     // }
 
-    // TODO
-    // /// Sets the block-time in seconds which will be used when the `era_test_node` instance is launched.
-    // pub const fn block_time(mut self, block_time: u64) -> Self {
-    //     self.block_time = Some(block_time as f64);
-    //     self
-    // }
+    /// Sets the block-time in seconds which will be used when the `era_test_node` instance is launched.
+    pub const fn block_time(mut self, block_time: u64) -> Self {
+        self.block_time = Some(block_time as f64);
+        self
+    }
 
     // TODO
     // /// Sets the block-time in sub-seconds which will be used when the `era_test_node` instance is launched.
@@ -315,9 +313,9 @@ impl EraTestNode {
             cmd.arg("--chain-id").arg(chain_id.to_string());
         }
 
-        // if let Some(block_time) = self.block_time {
-        //     cmd.arg("-b").arg(block_time.to_string());
-        // }
+        if let Some(block_time) = self.block_time {
+            cmd.arg("-b").arg(block_time.to_string());
+        }
 
         cmd.args(self.args);
 
@@ -434,15 +432,14 @@ mod tests {
         assert_eq!(era.port(), PORT);
     }
 
-    // TODO: AFAIU era_test_node doesn't support setting block time.
-    // #[test]
-    // fn assert_block_time_is_natural_number() {
-    //     //This test is to ensure that older versions of era_test_node are supported
-    //     //even though the block time is a f64, it should be passed as a whole number
-    //     let era_test_node = EraTestNode::new().block_time(12);
-    //     assert_eq!(era_test_node.block_time.unwrap().to_string(), "12");
-    //     let _ = era_test_node.spawn();
-    // }
+    #[test]
+    fn assert_block_time_is_natural_number() {
+        // This test is to ensure that older versions of era_test_node are supported
+        // even though the block time is a f64, it should be passed as a whole number
+        let era_test_node = EraTestNode::new().block_time(12);
+        assert_eq!(era_test_node.block_time.unwrap().to_string(), "12");
+        let _ = era_test_node.spawn();
+    }
 
     // #[test]
     // fn can_launch_era_test_node_with_sub_seconds_block_time() {

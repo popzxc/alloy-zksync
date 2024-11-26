@@ -97,7 +97,7 @@ impl TransactionRequest {
             .and_then(|meta| meta.paymaster_params.as_ref())
     }
 
-    /// Set the paymaster params  for the transaction.
+    /// Set the paymaster params for the transaction.
     pub fn set_paymaster_params(&mut self, paymaster_params: PaymasterParams) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
@@ -110,7 +110,7 @@ impl TransactionRequest {
         self
     }
 
-    /// Builder-pattern method for building a Zksync EIP-712 create2 tranasaction.
+    /// Builder-pattern method for building a ZKsync EIP-712 create2 tranasaction.
     pub fn with_create2_params(
         self,
         salt: B256,
@@ -131,7 +131,7 @@ impl TransactionRequest {
         self.with_create_params_inner(None, code, constructor_data, factory_deps)
     }
 
-    pub fn with_create_params_inner(
+    fn with_create_params_inner(
         self,
         salt: Option<B256>,
         code: Vec<u8>,
@@ -179,7 +179,7 @@ impl TransactionRequest {
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
         #[allow(deprecated)]
-        self.zksync_deploy_inner(None, code, constructor_data, factory_deps)
+        self.with_create_params_inner(None, code, constructor_data, factory_deps)
     }
 
     #[deprecated(note = "use `with_create2_params` instead")]
@@ -191,32 +191,7 @@ impl TransactionRequest {
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
         #[allow(deprecated)]
-        self.zksync_deploy_inner(Some(salt), code, constructor_data, factory_deps)
-    }
-
-    #[deprecated(note = "use `with_create_params_inner` instead")]
-    fn zksync_deploy_inner(
-        mut self,
-        salt: Option<B256>,
-        code: Vec<u8>,
-        constructor_data: Vec<u8>,
-        mut factory_deps: Vec<Vec<u8>>,
-    ) -> Result<Self, BytecodeHashError> {
-        self.base.transaction_type = Some(TxType::Eip712 as u8);
-
-        let bytecode_hash = hash_bytecode(&code)?;
-        factory_deps.push(code);
-        self.base.to = Some(CONTRACT_DEPLOYER_ADDRESS.into());
-        self.base.input = crate::contracts::l2::contract_deployer::encode_create_calldata(
-            salt,
-            bytecode_hash.into(),
-            constructor_data.into(),
-        )
-        .into();
-        self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .factory_deps = factory_deps.into_iter().map(Into::into).collect();
-        Ok(self)
+        self.with_create_params_inner(Some(salt), code, constructor_data, factory_deps)
     }
 }
 

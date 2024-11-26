@@ -216,7 +216,7 @@ impl TransactionRequest {
             .chain(vec![code])
             .map(Into::into)
             .collect();
-        let input: Bytes = match salt {
+        let input = match salt {
             Some(salt) => crate::contracts::l2::contract_deployer::encode_create2_calldata(
                 salt,
                 bytecode_hash.into(),
@@ -226,8 +226,7 @@ impl TransactionRequest {
                 bytecode_hash.into(),
                 constructor_data.into(),
             ),
-        }
-        .into();
+        };
         Ok(self
             .with_to(CONTRACT_DEPLOYER_ADDRESS)
             .with_input(input)

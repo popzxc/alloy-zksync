@@ -123,22 +123,26 @@ impl TransactionRequest {
         constructor_data: Vec<u8>,
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
-        self.with_create_params_inner(Some(salt), code, constructor_data, factory_deps)
+        let bytecode_hash = hash_bytecode(&code)?;
+        let factory_deps = factory_deps
+            .into_iter()
+            .chain(vec![code])
+            .map(Into::into)
+            .collect();
+        let input = crate::contracts::l2::contract_deployer::encode_create2_calldata(
+            salt,
+            bytecode_hash.into(),
+            constructor_data.into(),
+        );
+        Ok(self
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
+            .with_input(input)
+            .with_factory_deps(factory_deps))
     }
 
     /// Builder-pattern method for building a ZKsync EIP-712 create tranasaction.
     pub fn with_create_params(
         self,
-        code: Vec<u8>,
-        constructor_data: Vec<u8>,
-        factory_deps: Vec<Vec<u8>>,
-    ) -> Result<Self, BytecodeHashError> {
-        self.with_create_params_inner(None, code, constructor_data, factory_deps)
-    }
-
-    fn with_create_params_inner(
-        self,
-        salt: Option<B256>,
         code: Vec<u8>,
         constructor_data: Vec<u8>,
         factory_deps: Vec<Vec<u8>>,
@@ -149,18 +153,10 @@ impl TransactionRequest {
             .chain(vec![code])
             .map(Into::into)
             .collect();
-        let input: Bytes = match salt {
-            Some(salt) => crate::contracts::l2::contract_deployer::encode_create2_calldata(
-                salt,
-                bytecode_hash.into(),
-                constructor_data.into(),
-            ),
-            None => crate::contracts::l2::contract_deployer::encode_create_calldata(
-                bytecode_hash.into(),
-                constructor_data.into(),
-            ),
-        }
-        .into();
+        let input = crate::contracts::l2::contract_deployer::encode_create_calldata(
+            bytecode_hash.into(),
+            constructor_data.into(),
+        );
         Ok(self
             .with_to(CONTRACT_DEPLOYER_ADDRESS)
             .with_input(input)
@@ -191,7 +187,7 @@ impl TransactionRequest {
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
         #[allow(deprecated)]
-        self.with_create_params_inner(None, code, constructor_data, factory_deps)
+        self.zksync_deploy_inner(None, code, constructor_data, factory_deps)
     }
 
     #[deprecated(note = "use `with_create2_params` instead")]
@@ -202,7 +198,40 @@ impl TransactionRequest {
         constructor_data: Vec<u8>,
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
-        self.with_create_params_inner(Some(salt), code, constructor_data, factory_deps)
+        #[allow(deprecated)]
+        self.zksync_deploy_inner(Some(salt), code, constructor_data, factory_deps)
+    }
+
+    #[deprecated(note = "use `with_create_params` or `with_create2_params` instead")]
+    fn zksync_deploy_inner(
+        self,
+        salt: Option<B256>,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        let bytecode_hash = hash_bytecode(&code)?;
+        let factory_deps = factory_deps
+            .into_iter()
+            .chain(vec![code])
+            .map(Into::into)
+            .collect();
+        let input: Bytes = match salt {
+            Some(salt) => crate::contracts::l2::contract_deployer::encode_create2_calldata(
+                salt,
+                bytecode_hash.into(),
+                constructor_data.into(),
+            ),
+            None => crate::contracts::l2::contract_deployer::encode_create_calldata(
+                bytecode_hash.into(),
+                constructor_data.into(),
+            ),
+        }
+        .into();
+        Ok(self
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
+            .with_input(input)
+            .with_factory_deps(factory_deps))
     }
 }
 

@@ -96,7 +96,7 @@ pub trait ZksyncTransactionBuilder:
             constructor_data.into(),
         );
         Ok(self
-            .with_to(CONTRACT_DEPLOYER_ADDRESS.into())
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
             .with_input(input)
             .with_factory_deps(factory_deps))
     }
@@ -120,7 +120,7 @@ pub trait ZksyncTransactionBuilder:
             constructor_data.into(),
         );
         Ok(self
-            .with_to(CONTRACT_DEPLOYER_ADDRESS.into())
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
             .with_input(input)
             .with_factory_deps(factory_deps))
     }
@@ -148,7 +148,7 @@ impl ZksyncTransactionBuilder for TransactionRequest {
 
     fn set_gas_per_pubdata(&mut self, gas_per_pubdata: U256) {
         self.eip_712_meta
-            .get_or_insert_with(|| Eip712Meta::default())
+            .get_or_insert_with(Eip712Meta::default)
             .gas_per_pubdata = gas_per_pubdata;
     }
 
@@ -160,33 +160,31 @@ impl ZksyncTransactionBuilder for TransactionRequest {
 
     fn set_factory_deps(&mut self, factory_deps: Vec<Bytes>) {
         self.eip_712_meta
-            .get_or_insert_with(|| Eip712Meta::default())
+            .get_or_insert_with(Eip712Meta::default)
             .factory_deps = factory_deps;
     }
 
     fn custom_signature(&self) -> Option<&Bytes> {
         self.eip_712_meta
             .as_ref()
-            .map(|meta| meta.custom_signature.as_ref())
-            .flatten()
+            .and_then(|meta| meta.custom_signature.as_ref())
     }
 
     fn set_custom_signature(&mut self, custom_signature: Bytes) {
         self.eip_712_meta
-            .get_or_insert_with(|| Eip712Meta::default())
+            .get_or_insert_with(Eip712Meta::default)
             .custom_signature = Some(custom_signature);
     }
 
     fn paymaster_params(&self) -> Option<&PaymasterParams> {
         self.eip_712_meta
             .as_ref()
-            .map(|meta| meta.paymaster_params.as_ref())
-            .flatten()
+            .and_then(|meta| meta.paymaster_params.as_ref())
     }
 
     fn set_paymaster_params(&mut self, paymaster_params: PaymasterParams) {
         self.eip_712_meta
-            .get_or_insert_with(|| Eip712Meta::default())
+            .get_or_insert_with(Eip712Meta::default)
             .paymaster_params = Some(paymaster_params);
     }
 }

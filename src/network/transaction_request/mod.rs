@@ -9,7 +9,7 @@ use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError, PaymasterParams};
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
-/// Transaction request supporting ZKsync's EIP-712 transactions.
+/// Transaction request supporting ZKsync's EIP-712 transaction types.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {
@@ -156,20 +156,22 @@ impl TransactionRequest {
     }
 }
 
-#[deprecated(note = "use ZksyncTransactionBuilder instead")]
 impl TransactionRequest {
+    #[deprecated(note = "use `set_paymaster_params` instead")]
     pub fn set_paymaster(&mut self, paymaster_params: PaymasterParams) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .paymaster_params = Some(paymaster_params);
     }
 
+    #[deprecated(note = "use `with_paymaster_params` instead")]
     pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
         #[allow(deprecated)]
         self.set_paymaster(paymaster_params);
         self
     }
 
+    #[deprecated(note = "use `with_create_params` instead")]
     pub fn zksync_deploy(
         self,
         code: Vec<u8>,
@@ -180,6 +182,7 @@ impl TransactionRequest {
         self.zksync_deploy_inner(None, code, constructor_data, factory_deps)
     }
 
+    #[deprecated(note = "use `with_create2_params` instead")]
     pub fn zksync_deploy_with_salt(
         self,
         salt: B256,
@@ -191,6 +194,7 @@ impl TransactionRequest {
         self.zksync_deploy_inner(Some(salt), code, constructor_data, factory_deps)
     }
 
+    #[deprecated(note = "use `with_create_params_inner` instead")]
     fn zksync_deploy_inner(
         mut self,
         salt: Option<B256>,

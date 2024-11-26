@@ -8,30 +8,39 @@ use super::receipt_envelope::ReceiptEnvelope;
 use crate::types::*;
 use alloy::eips::eip7702::SignedAuthorization;
 
+/// Transaction receipt type that includes L2 specific fields.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ReceiptResponse<T = ReceiptEnvelope<Log>> {
+    /// Standard transaction receipt data.
     #[serde(flatten)]
     inner: TransactionReceipt<T>,
-
+    /// Number of the l1 batch this transaction was included within.
     l1_batch_number: Option<U64>,
+    /// Index of transaction in l1 batch.
     l1_batch_tx_index: Option<U64>,
+    /// L2 to L1 logs generated within this transaction.
     l2_to_l1_logs: Vec<L2ToL1Log>,
 }
 
 impl ReceiptResponse {
+    /// Logs generated within this transaction.
     pub fn logs(&self) -> &[Log] {
         self.inner.inner.logs()
     }
+    /// Transaction receipt's bloom.
     pub fn logs_bloom(&self) -> Bloom {
         self.inner.inner.bloom()
     }
+    /// Number of the l1 batch this transaction was included within.
     pub fn l1_batch_number(&self) -> Option<U64> {
         self.l1_batch_number
     }
+    /// Index of transaction in l1 batch.
     pub fn l1_batch_tx_index(&self) -> Option<U64> {
         self.l1_batch_tx_index
     }
+    /// L2 to L1 logs generated within this transaction.
     pub fn l2_to_l1_logs(&self) -> &[L2ToL1Log] {
         &self.l2_to_l1_logs
     }

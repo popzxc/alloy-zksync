@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 #[serde(untagged)]
 pub enum ReceiptEnvelope<T = Log> {
     Native(alloy::consensus::ReceiptEnvelope<T>),
+    /// For now AnyReceiptEnvelope is used due to the fact that 
+    /// alloy::consensus::ReceiptEnvelope cannot be decoded because of different transaction type,
+    /// but for now we don't need any custom functionality for EIP712 receipt
     Eip712(AnyReceiptEnvelope<T>),
 }
 

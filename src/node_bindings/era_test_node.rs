@@ -18,7 +18,7 @@ use thiserror::Error;
 use url::Url;
 
 /// How long we will wait for era_test_node to indicate that it is ready.
-const ERA_TEST_NODE_STARTUP_TIMEOUT_MILLIS: u64 = 30_000;
+const ERA_TEST_NODE_STARTUP_TIMEOUT_MILLIS: u64 = 10_000;
 
 /// An era_test_node CLI instance. Will close the instance when dropped.
 ///

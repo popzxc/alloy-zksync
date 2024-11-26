@@ -305,21 +305,35 @@ pub struct Log {
     pub block_timestamp: Option<U64>,
 }
 
+/// Type for L2 to L1 logs that are returned as a part of `eth_getTransactionReceipt` response.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct L2ToL1Log {
+    /// Hash of the block where this log was in.
     pub block_hash: Option<B256>,
+    /// Block number where this log was in.
     pub block_number: U64,
+    /// L1 batch number where this log was in.
     pub l1_batch_number: Option<U64>,
+    /// Log index position in the block.
     pub log_index: U256,
+    /// Transaction index position from which the log created.
     pub transaction_index: U64,
+    /// Hash of the transactions from which this log was created.
     pub transaction_hash: B256,
+    /// Log index position in the transaction.
     pub transaction_log_index: U256,
+    /// The number of the transaction in the batch where the log occurred.
     pub tx_index_in_l1_batch: Option<U64>,
+    /// The id of the shard the opcode was called (it is currently always 0).
     pub shard_id: U64,
+    /// A boolean flag that indicates whether the log is a service log. It is not used right now.
     pub is_service: bool,
+    /// The value of this in the frame where the L2 to L1 log was emitted.
     pub sender: Address,
+    /// Key and value are two 32-byte values that can be used to carry some data with the log.
     pub key: B256,
+    /// Key and value are two 32-byte values that can be used to carry some data with the log.
     pub value: B256,
 }
 

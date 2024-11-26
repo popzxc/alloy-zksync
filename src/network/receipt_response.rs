@@ -28,7 +28,7 @@ impl ReceiptResponse {
     pub fn logs(&self) -> &[Log] {
         self.inner.inner.logs()
     }
-    /// Transaction receipt's bloom.
+    /// Transaction receipt's logs bloom.
     pub fn logs_bloom(&self) -> Bloom {
         self.inner.inner.bloom()
     }

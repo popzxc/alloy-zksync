@@ -9,7 +9,8 @@ use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError, PaymasterParams};
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+/// Transaction request supporting ZKsync's EIP-712 transactions.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {
     #[serde(flatten)]
@@ -18,241 +19,157 @@ pub struct TransactionRequest {
     eip_712_meta: Option<Eip712Meta>,
 }
 
-/// Transaction builder type supporting ZKsync's EIP-712 transactions.
-pub trait ZksyncTransactionBuilder:
-    TransactionBuilder<Zksync> + Default + Sized + Send + Sync + 'static
-{
-    /// Create a new EIP-712 transaction.
-    fn new_eip712() -> Self;
-
-    /// Builder-pattern method for setting transaction type to EIP-712.
-    fn with_eip712(self) -> Self;
-
-    /// Get the gas per pubdata for the transaction.
-    fn gas_per_pubdata(&self) -> Option<U256>;
-
-    /// Set the gas per pubdata  for the transaction.
-    fn set_gas_per_pubdata(&mut self, gas_per_pubdata: U256);
-
-    /// Builder-pattern method for setting gas per pubdata.
-    fn with_gas_per_pubdata(mut self, gas_per_pubdata: U256) -> Self {
-        self.set_gas_per_pubdata(gas_per_pubdata);
-        self
-    }
-
-    /// Get the factory deps for the transaction.
-    fn factory_deps(&self) -> Option<&Vec<Bytes>>;
-
-    /// Set the factory deps  for the transaction.
-    fn set_factory_deps(&mut self, factory_deps: Vec<Bytes>);
-
-    /// Builder-pattern method for setting factory deps.
-    fn with_factory_deps(mut self, factory_deps: Vec<Bytes>) -> Self {
-        self.set_factory_deps(factory_deps);
-        self
-    }
-
-    /// Get the custom signature for the transaction.
-    fn custom_signature(&self) -> Option<&Bytes>;
-
-    /// Set the custom signature  for the transaction.
-    fn set_custom_signature(&mut self, custom_signature: Bytes);
-
-    /// Builder-pattern method for setting custom signature.
-    fn with_custom_signature(mut self, custom_signature: Bytes) -> Self {
-        self.set_custom_signature(custom_signature);
-        self
-    }
-
-    /// Get the paymaster params for the transaction.
-    fn paymaster_params(&self) -> Option<&PaymasterParams>;
-
-    /// Set the paymaster params  for the transaction.
-    fn set_paymaster_params(&mut self, paymaster_params: PaymasterParams);
-
-    /// Builder-pattern method for setting paymaster params.
-    fn with_paymaster_params(mut self, paymaster_params: PaymasterParams) -> Self {
-        self.set_paymaster_params(paymaster_params);
-        self
-    }
-
-    /// Builder-pattern method for building a Zksync EIP-712 create2 tranasaction.
-    fn with_create2_params(
-        self,
-        salt: B256,
-        code: Vec<u8>,
-        constructor_data: Vec<u8>,
-        factory_deps: Vec<Vec<u8>>,
-    ) -> Result<Self, BytecodeHashError> {
-        let bytecode_hash = hash_bytecode(&code)?;
-        let factory_deps = factory_deps
-            .into_iter()
-            .chain(vec![code])
-            .map(Into::into)
-            .collect();
-        let input = crate::contracts::l2::contract_deployer::encode_create_calldata(
-            Some(salt),
-            bytecode_hash.into(),
-            constructor_data.into(),
-        );
-        Ok(self
-            .with_to(CONTRACT_DEPLOYER_ADDRESS)
-            .with_input(input)
-            .with_factory_deps(factory_deps))
-    }
-
-    /// Builder-pattern method for building a ZKsync EIP-712 create tranasaction.
-    fn with_create_params(
-        self,
-        code: Vec<u8>,
-        constructor_data: Vec<u8>,
-        factory_deps: Vec<Vec<u8>>,
-    ) -> Result<Self, BytecodeHashError> {
-        let bytecode_hash = hash_bytecode(&code)?;
-        let factory_deps = factory_deps
-            .into_iter()
-            .chain(vec![code])
-            .map(Into::into)
-            .collect();
-        let input = crate::contracts::l2::contract_deployer::encode_create_calldata(
-            None,
-            bytecode_hash.into(),
-            constructor_data.into(),
-        );
-        Ok(self
-            .with_to(CONTRACT_DEPLOYER_ADDRESS)
-            .with_input(input)
-            .with_factory_deps(factory_deps))
-    }
-}
-
-impl ZksyncTransactionBuilder for TransactionRequest {
-    fn new_eip712() -> Self {
+impl Default for TransactionRequest {
+    fn default() -> Self {
         Self {
             base: alloy::rpc::types::transaction::TransactionRequest {
                 transaction_type: Some(TxType::Eip712 as u8),
                 ..Default::default()
             },
-            ..Default::default()
+            eip_712_meta: Default::default(),
         }
-    }
-
-    fn with_eip712(mut self) -> Self {
-        self.base.transaction_type = Some(TxType::Eip712 as u8);
-        self
-    }
-
-    fn gas_per_pubdata(&self) -> Option<U256> {
-        self.eip_712_meta.as_ref().map(|meta| meta.gas_per_pubdata)
-    }
-
-    fn set_gas_per_pubdata(&mut self, gas_per_pubdata: U256) {
-        self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .gas_per_pubdata = gas_per_pubdata;
-    }
-
-    fn factory_deps(&self) -> Option<&Vec<Bytes>> {
-        self.eip_712_meta
-            .as_ref()
-            .map(|meta| meta.factory_deps.as_ref())
-    }
-
-    fn set_factory_deps(&mut self, factory_deps: Vec<Bytes>) {
-        self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .factory_deps = factory_deps;
-    }
-
-    fn custom_signature(&self) -> Option<&Bytes> {
-        self.eip_712_meta
-            .as_ref()
-            .and_then(|meta| meta.custom_signature.as_ref())
-    }
-
-    fn set_custom_signature(&mut self, custom_signature: Bytes) {
-        self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .custom_signature = Some(custom_signature);
-    }
-
-    fn paymaster_params(&self) -> Option<&PaymasterParams> {
-        self.eip_712_meta
-            .as_ref()
-            .and_then(|meta| meta.paymaster_params.as_ref())
-    }
-
-    fn set_paymaster_params(&mut self, paymaster_params: PaymasterParams) {
-        self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .paymaster_params = Some(paymaster_params);
     }
 }
 
-// TODO: Extension trait for `TransactionBuilder`?
 impl TransactionRequest {
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Get the gas per pubdata for the transaction.
     pub fn gas_per_pubdata(&self) -> Option<U256> {
         self.eip_712_meta.as_ref().map(|meta| meta.gas_per_pubdata)
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Set the gas per pubdata  for the transaction.
     pub fn set_gas_per_pubdata(&mut self, gas_per_pubdata: U256) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .gas_per_pubdata = gas_per_pubdata;
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Builder-pattern method for setting gas per pubdata.
     pub fn with_gas_per_pubdata(mut self, gas_per_pubdata: U256) -> Self {
-        #[allow(deprecated)]
         self.set_gas_per_pubdata(gas_per_pubdata);
         self
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
-    pub fn set_paymaster(&mut self, paymaster_params: PaymasterParams) {
+    /// Get the factory deps for the transaction.
+    pub fn factory_deps(&self) -> Option<&Vec<Bytes>> {
         self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .paymaster_params = Some(paymaster_params);
+            .as_ref()
+            .map(|meta| meta.factory_deps.as_ref())
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
-    pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
-        #[allow(deprecated)]
-        self.set_paymaster(paymaster_params);
-        self
-    }
-
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Set the factory deps  for the transaction.
     pub fn set_factory_deps(&mut self, factory_deps: Vec<Bytes>) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .factory_deps = factory_deps;
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Builder-pattern method for setting factory deps.
     pub fn with_factory_deps(mut self, factory_deps: Vec<Bytes>) -> Self {
-        #[allow(deprecated)]
         self.set_factory_deps(factory_deps);
         self
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Get the custom signature for the transaction.
+    pub fn custom_signature(&self) -> Option<&Bytes> {
+        self.eip_712_meta
+            .as_ref()
+            .and_then(|meta| meta.custom_signature.as_ref())
+    }
+
+    /// Set the custom signature  for the transaction.
     pub fn set_custom_signature(&mut self, custom_signature: Bytes) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .custom_signature = Some(custom_signature);
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Builder-pattern method for setting custom signature.
     pub fn with_custom_signature(mut self, custom_signature: Bytes) -> Self {
-        #[allow(deprecated)]
         self.set_custom_signature(custom_signature);
         self
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
+    /// Get the paymaster params for the transaction.
+    pub fn paymaster_params(&self) -> Option<&PaymasterParams> {
+        self.eip_712_meta
+            .as_ref()
+            .and_then(|meta| meta.paymaster_params.as_ref())
+    }
+
+    /// Set the paymaster params  for the transaction.
+    pub fn set_paymaster_params(&mut self, paymaster_params: PaymasterParams) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .paymaster_params = Some(paymaster_params);
+    }
+
+    /// Builder-pattern method for setting paymaster params.
+    pub fn with_paymaster_params(mut self, paymaster_params: PaymasterParams) -> Self {
+        self.set_paymaster_params(paymaster_params);
+        self
+    }
+
+    /// Builder-pattern method for building a Zksync EIP-712 create2 tranasaction.
+    pub fn with_create2_params(
+        self,
+        salt: B256,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        self.with_create_params_inner(Some(salt), code, constructor_data, factory_deps)
+    }
+
+    /// Builder-pattern method for building a ZKsync EIP-712 create tranasaction.
+    pub fn with_create_params(
+        self,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        self.with_create_params_inner(None, code, constructor_data, factory_deps)
+    }
+
+    pub fn with_create_params_inner(
+        self,
+        salt: Option<B256>,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        let bytecode_hash = hash_bytecode(&code)?;
+        let factory_deps = factory_deps
+            .into_iter()
+            .chain(vec![code])
+            .map(Into::into)
+            .collect();
+        let input = crate::contracts::l2::contract_deployer::encode_create_calldata(
+            salt,
+            bytecode_hash.into(),
+            constructor_data.into(),
+        );
+        Ok(self
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
+            .with_input(input)
+            .with_factory_deps(factory_deps))
+    }
+}
+
+#[deprecated(note = "use ZksyncTransactionBuilder instead")]
+impl TransactionRequest {
+    pub fn set_paymaster(&mut self, paymaster_params: PaymasterParams) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .paymaster_params = Some(paymaster_params);
+    }
+
+    pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
+        #[allow(deprecated)]
+        self.set_paymaster(paymaster_params);
+        self
+    }
+
     pub fn zksync_deploy(
         self,
         code: Vec<u8>,
@@ -263,7 +180,6 @@ impl TransactionRequest {
         self.zksync_deploy_inner(None, code, constructor_data, factory_deps)
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
     pub fn zksync_deploy_with_salt(
         self,
         salt: B256,
@@ -275,7 +191,6 @@ impl TransactionRequest {
         self.zksync_deploy_inner(Some(salt), code, constructor_data, factory_deps)
     }
 
-    #[deprecated(note = "use ZksyncTransactionBuilder instead")]
     fn zksync_deploy_inner(
         mut self,
         salt: Option<B256>,

@@ -8,10 +8,7 @@ use alloy::{
     transports::{Transport, TransportResult},
 };
 
-use crate::network::{
-    transaction_request::{TransactionRequest, ZksyncTransactionBuilder},
-    Zksync,
-};
+use crate::network::{transaction_request::TransactionRequest, Zksync};
 
 use super::{Eip712Fee, ZksyncProvider};
 
@@ -23,7 +20,7 @@ impl TxFiller<Zksync> for Eip712FeeFiller {
     type Fillable = Eip712Fee;
 
     fn status(&self, tx: &TransactionRequest) -> FillerControlFlow {
-        if ZksyncTransactionBuilder::gas_per_pubdata(tx).unwrap_or_default() > U256::ZERO  // TODO: Should be `is_none()` once `gas_per_pubdata` in TransactionRequest is `Option`
+        if tx.gas_per_pubdata().unwrap_or_default() > U256::ZERO  // TODO: Should be `is_none()` once `gas_per_pubdata` in TransactionRequest is `Option`
             && tx.gas_limit().is_some()
             && tx.max_fee_per_gas().is_some()
             && tx.max_priority_fee_per_gas().is_some()
@@ -68,9 +65,8 @@ impl TxFiller<Zksync> for Eip712FeeFiller {
                 builder.set_max_priority_fee_per_gas(fee.max_priority_fee_per_gas);
             }
             // TODO: Should be `is_none()` once `gas_per_pubdata` in TransactionRequest is `Option`
-            if ZksyncTransactionBuilder::gas_per_pubdata(builder).unwrap_or_default() == U256::ZERO
-            {
-                ZksyncTransactionBuilder::set_gas_per_pubdata(builder, fee.gas_per_pubdata_limit);
+            if builder.gas_per_pubdata().unwrap_or_default() == U256::ZERO {
+                builder.set_gas_per_pubdata(fee.gas_per_pubdata_limit);
             }
         }
         Ok(tx)

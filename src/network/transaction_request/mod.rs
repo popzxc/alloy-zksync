@@ -99,11 +99,17 @@ impl TransactionRequest {
         let bytecode_hash = hash_bytecode(&code)?;
         factory_deps.push(code);
         self.base.to = Some(CONTRACT_DEPLOYER_ADDRESS.into());
-        self.base.input = crate::contracts::l2::contract_deployer::encode_create_calldata(
-            salt,
-            bytecode_hash.into(),
-            constructor_data.into(),
-        )
+        self.base.input = match salt {
+            Some(salt) => crate::contracts::l2::contract_deployer::encode_create2_calldata(
+                salt,
+                bytecode_hash.into(),
+                constructor_data.into(),
+            ),
+            None => crate::contracts::l2::contract_deployer::encode_create_calldata(
+                bytecode_hash.into(),
+                constructor_data.into(),
+            ),
+        }
         .into();
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)

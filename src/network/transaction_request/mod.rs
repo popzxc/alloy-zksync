@@ -104,14 +104,13 @@ impl TransactionRequest {
                 salt,
                 bytecode_hash.into(),
                 constructor_data.into(),
-            )
-            .into(),
+            ),
             None => crate::contracts::l2::contract_deployer::encode_create_calldata(
                 bytecode_hash.into(),
                 constructor_data.into(),
-            )
-            .into(),
-        };
+            ),
+        }
+        .into();
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .factory_deps = factory_deps.into_iter().map(Into::into).collect();

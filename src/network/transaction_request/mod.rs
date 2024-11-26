@@ -149,11 +149,18 @@ impl TransactionRequest {
             .chain(vec![code])
             .map(Into::into)
             .collect();
-        let input = crate::contracts::l2::contract_deployer::encode_create_calldata(
-            salt,
-            bytecode_hash.into(),
-            constructor_data.into(),
-        );
+        let input: Bytes = match salt {
+            Some(salt) => crate::contracts::l2::contract_deployer::encode_create2_calldata(
+                salt,
+                bytecode_hash.into(),
+                constructor_data.into(),
+            ),
+            None => crate::contracts::l2::contract_deployer::encode_create_calldata(
+                bytecode_hash.into(),
+                constructor_data.into(),
+            ),
+        }
+        .into();
         Ok(self
             .with_to(CONTRACT_DEPLOYER_ADDRESS)
             .with_input(input)
@@ -195,7 +202,6 @@ impl TransactionRequest {
         constructor_data: Vec<u8>,
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
-        #[allow(deprecated)]
         self.with_create_params_inner(Some(salt), code, constructor_data, factory_deps)
     }
 }

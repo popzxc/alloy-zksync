@@ -10,6 +10,11 @@ use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError, PaymasterPara
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
 /// Transaction request supporting ZKsync's EIP-712 transaction types.
+///
+/// Unlike `TransactionRequest` for Ethereum network, it would try to use ZKsync-native
+/// EIP712 transaction type by default, unless explicitly overridden. The reason for that
+/// is that EIP712 transactions have the same capabilities as type 0 and EIP1559
+/// transactions, while being cheaper to process.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {

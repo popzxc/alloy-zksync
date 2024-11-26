@@ -367,48 +367,41 @@ impl EraTestNode {
                 break;
             }
 
-            if line.contains("Private Key: ") {
-                // Questionable but OK.
-                let key_str = line
-                    .split("0x")
-                    .last()
-                    .ok_or(EraTestNodeError::ParsePrivateKeyError)?
-                    .trim();
-                let key_hex = hex::decode(key_str).map_err(EraTestNodeError::FromHexError)?;
-                let key = K256SecretKey::from_bytes((&key_hex[..]).into())
-                    .map_err(|_| EraTestNodeError::DeserializePrivateKeyError)?;
-                addresses.push(Address::from_public_key(
-                    SigningKey::from(&key).verifying_key(),
-                ));
-                private_keys.push(key);
-            }
-
-            // if line.starts_with("Private Keys") {
-            //     is_private_key = true;
-            // }
-
-            // if is_private_key && line.starts_with('(') {
-            //     let key_str = line
-            //         .split("0x")
-            //         .last()
-            //         .ok_or(EraTestNodeError::ParsePrivateKeyError)?
-            //         .trim();
-            //     let key_hex = hex::decode(key_str).map_err(EraTestNodeError::FromHexError)?;
-            //     let key = K256SecretKey::from_bytes((&key_hex[..]).into())
-            //         .map_err(|_| EraTestNodeError::DeserializePrivateKeyError)?;
-            //     addresses.push(Address::from_public_key(
-            //         SigningKey::from(&key).verifying_key(),
-            //     ));
-            //     private_keys.push(key);
-            // }
-
-            if let Some(start_chain_id) = line.find("L2ChainId") {
-                // <Starting network with chain id: L2ChainId(260)>
-                // Account for parenthesis.
-                let start = start_chain_id + "L2ChainId".len() + 1;
-                let end = line.len() - 1;
-                let rest = &line[start..end];
-                if let Ok(chain) = rest.split_whitespace().next().unwrap_or("").parse::<u64>() {
+            // Questionable but OK.
+            // Start the internal loop to go over the private keys
+            if line.contains("Private Keys") {
+                loop {
+                    let mut pk_line = String::new();
+                    reader
+                        .read_line(&mut pk_line)
+                        .map_err(EraTestNodeError::ReadLineError)?;
+                    tracing::trace!(target: "era_test_node", pk_line);
+                    match pk_line.trim() {
+                        "" => break,
+                        pk_line => {
+                            if pk_line.contains("0x") {
+                                let key_str = pk_line.split("0x").nth(1).unwrap();
+                                let key_hex =
+                                    hex::decode(key_str).map_err(EraTestNodeError::FromHexError)?;
+                                let key = K256SecretKey::from_bytes((&key_hex[..]).into())
+                                    .map_err(|_| EraTestNodeError::DeserializePrivateKeyError)?;
+                                addresses.push(Address::from_public_key(
+                                    SigningKey::from(&key).verifying_key(),
+                                ));
+                                private_keys.push(key);
+                            }
+                        }
+                    }
+                }
+            } else if line.contains("Chain ID:") {
+                // Chain ID: 260
+                if let Ok(chain) = line
+                    .split("Chain ID:")
+                    .nth(1)
+                    .unwrap()
+                    .trim()
+                    .parse::<u64>()
+                {
                     chain_id = Some(chain);
                 };
             }

@@ -38,7 +38,7 @@ pub struct TxEip712 {
     /// computation is done and may not be increased
     /// later; formally Tg.
     #[serde(with = "alloy::serde::quantity")]
-    pub gas_limit: u64,
+    pub gas: u64,
     /// A scalar value equal to the maximum
     /// amount of gas that should be used in executing
     /// this transaction. This is paid up-front, before any
@@ -80,7 +80,8 @@ pub struct TxEip712 {
     /// input data of the message call, formally Td.
     pub input: Bytes,
     /// ZKsync-specific fields.
-    pub eip712_meta: Eip712Meta,
+    #[serde(flatten)]
+    pub eip712_meta: Option<Eip712Meta>,
 }
 
 impl TxEip712 {
@@ -147,7 +148,7 @@ impl TxEip712 {
         let nonce = Decodable::decode(buf)?;
         let max_priority_fee_per_gas = Decodable::decode(buf)?;
         let max_fee_per_gas = Decodable::decode(buf)?;
-        let gas_limit = Decodable::decode(buf)?;
+        let gas = Decodable::decode(buf)?;
         let to = Decodable::decode(buf)?;
         let value = Decodable::decode(buf)?;
         let input = Decodable::decode(buf)?;
@@ -159,14 +160,14 @@ impl TxEip712 {
         let tx = Self {
             chain_id,
             nonce,
-            gas_limit,
+            gas,
             max_fee_per_gas,
             max_priority_fee_per_gas,
             to,
             from,
             value,
             input,
-            eip712_meta,
+            eip712_meta: Some(eip712_meta),
         };
 
         // Context: `SignableTransaction` is commented out for now.
@@ -186,13 +187,17 @@ impl TxEip712 {
         self.nonce.length()
             + self.max_priority_fee_per_gas.length()
             + self.max_fee_per_gas.length()
-            + self.gas_limit.length()
+            + self.gas.length()
             + self.to.length()
             + self.value.length()
             + self.input.length()
             + self.chain_id.length()
             + self.from.length()
-            + self.eip712_meta.length()
+            + self
+                .eip712_meta
+                .as_ref()
+                .map(|m| m.length())
+                .unwrap_or_default()
     }
 
     /// Encodes the transaction from RLP bytes, including the signature. This __does not__ encode a
@@ -210,14 +215,16 @@ impl TxEip712 {
         self.nonce.encode(out);
         self.max_priority_fee_per_gas.encode(out);
         self.max_fee_per_gas.encode(out);
-        self.gas_limit.encode(out);
+        self.gas.encode(out);
         self.to.encode(out);
         self.value.encode(out);
         self.input.0.encode(out);
         signature.write_rlp_vrs(out, signature.v());
         self.chain_id.encode(out);
         self.from.encode(out);
-        self.eip712_meta.encode(out);
+        if let Some(eip712_meta) = &self.eip712_meta {
+            eip712_meta.encode(out);
+        }
     }
 
     /// Gets the length of the encoded header.
@@ -257,7 +264,7 @@ impl Transaction for TxEip712 {
     }
 
     fn gas_limit(&self) -> u64 {
-        self.gas_limit
+        self.gas
     }
 
     fn gas_price(&self) -> Option<u128> {
@@ -392,7 +399,7 @@ impl From<TxEip712> for alloy::rpc::types::transaction::TransactionRequest {
             transaction_type: Some(tx.tx_type() as u8),
             chain_id: Some(tx.chain_id),
             nonce: Some((tx.nonce % U256::from(u64::MAX)).try_into().unwrap()), // TODO: Is decomposed nonce fine here?
-            gas: Some(tx.gas_limit),
+            gas: Some(tx.gas),
             max_fee_per_gas: Some(tx.max_fee_per_gas),
             max_priority_fee_per_gas: Some(tx.max_priority_fee_per_gas),
             to: Some(tx.to.into()),
@@ -430,7 +437,7 @@ mod tests {
         let tx = signed_tx.tx();
         assert_eq!(tx.chain_id, 270);
         assert_eq!(tx.nonce, U256::from(1));
-        assert_eq!(tx.gas_limit, 12);
+        assert_eq!(tx.gas, 12);
         assert_eq!(tx.max_fee_per_gas, 11);
         assert_eq!(tx.max_priority_fee_per_gas, 0);
         assert_eq!(tx.to, address!("0754b07d1ea3071c3ec9bd86b2aa6f1a59a51498"));
@@ -440,29 +447,20 @@ mod tests {
         );
         assert_eq!(tx.value, U256::from(10));
         assert_eq!(tx.input, Bytes::from_hex("0x010203").unwrap());
-        assert_eq!(tx.eip712_meta.gas_per_pubdata, U256::from(4));
         assert_eq!(
-            tx.eip712_meta.factory_deps,
-            vec![Bytes::from_hex(
-                "0x0202020202020202020202020202020202020202020202020202020202020202"
-            )
-            .unwrap()]
-        );
-        assert_eq!(
-            tx.eip712_meta.custom_signature,
-            Some(Bytes::from_hex("0x010203").unwrap())
-        );
-        assert_eq!(
-            tx.eip712_meta
-                .paymaster_params
-                .as_ref()
-                .unwrap()
-                .paymaster_input,
-            Bytes::from_hex("0x").unwrap()
-        );
-        assert_eq!(
-            tx.eip712_meta.paymaster_params.as_ref().unwrap().paymaster,
-            address!("0000000000000000000000000000000000000000")
+            tx.eip712_meta,
+            Some(Eip712Meta {
+                gas_per_pubdata: U256::from(4),
+                factory_deps: vec![Bytes::from_hex(
+                    "0x0202020202020202020202020202020202020202020202020202020202020202"
+                )
+                .unwrap()],
+                custom_signature: Some(Bytes::from_hex("0x010203").unwrap()),
+                paymaster_params: Some(PaymasterParams {
+                    paymaster: address!("0000000000000000000000000000000000000000"),
+                    paymaster_input: Bytes::from_hex("0x").unwrap()
+                }),
+            })
         );
     }
 
@@ -475,7 +473,7 @@ mod tests {
         let tx = signed_tx.tx();
         assert_eq!(tx.chain_id, 271);
         assert_eq!(tx.nonce, U256::from(0));
-        assert_eq!(tx.gas_limit, 10000000);
+        assert_eq!(tx.gas, 10000000);
         assert_eq!(tx.max_fee_per_gas, 1000000000);
         assert_eq!(tx.max_priority_fee_per_gas, 1000000000);
         assert_eq!(tx.to, address!("9c1a3d7c98dbf89c7f5d167f2219c29c2fe775a7"));
@@ -486,23 +484,17 @@ mod tests {
         assert_eq!(tx.value, U256::from(0));
         assert_eq!(tx.input, Bytes::from_hex("5abef77a000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002e0000000000000000000000000000000000000000000000000000000000000008000000000000000000000000051ef809ffd89cf8056d4c17f0aff1b6f8257eb6000000000000000000000000000000000000000000000000000000000000001f4000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000001e10100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000010f0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000078cad996530109838eb016619f5931a03250489a000000000000000000000000aaf5f437fb0524492886fba64d703df15bf619ae000000000000000000000000000000000000000000000000000000000000010f00000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064a41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap());
 
-        assert_eq!(tx.eip712_meta.gas_per_pubdata, U256::from(50000));
-        assert_eq!(tx.eip712_meta.factory_deps, vec![] as Vec<Bytes>);
         assert_eq!(
-            tx.eip712_meta.custom_signature,
-            Some(Bytes::from_hex("0x").unwrap())
-        );
-        assert_eq!(
-            tx.eip712_meta.paymaster_params.as_ref().unwrap().paymaster,
-            address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5")
-        );
-        assert_eq!(
-            tx.eip712_meta
-                .paymaster_params
-                .as_ref()
-                .unwrap()
-                .paymaster_input,
-            Bytes::from_hex("0x1234").unwrap()
+            tx.eip712_meta,
+            Some(Eip712Meta {
+                gas_per_pubdata: U256::from(50000),
+                factory_deps: vec![],
+                custom_signature: Some(Bytes::from_hex("0x").unwrap()),
+                paymaster_params: Some(PaymasterParams {
+                    paymaster: address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5"),
+                    paymaster_input: Bytes::from_hex("0x1234").unwrap()
+                }),
+            })
         );
     }
 
@@ -520,11 +512,11 @@ mod tests {
             to: Address::from_str("0x82112600a140ceaa9d7da373bb65453f7d99af4b").unwrap(),
             nonce: U256::from(1),
             value: U256::from(10),
-            gas_limit: 12,
+            gas: 12,
             max_fee_per_gas: 11,
             max_priority_fee_per_gas: 0,
             input: vec![0x01, 0x02, 0x03].into(),
-            eip712_meta,
+            eip712_meta: Some(eip712_meta),
         };
         let expected_signature_hash = FixedBytes::<32>::from_str(
             "0xfc76820a67d9b1b351f2ac661e6d2bcca1c67508ae4930e036f540fa135875fe",
@@ -566,11 +558,11 @@ mod tests {
             to: Address::from_str("0x82112600a140ceaa9d7da373bb65453f7d99af4b").unwrap(),
             nonce: U256::from(1),
             value: U256::from(10),
-            gas_limit: 12,
+            gas: 12,
             max_fee_per_gas: 11,
             max_priority_fee_per_gas: 0,
             input: vec![0x01, 0x02, 0x03].into(),
-            eip712_meta,
+            eip712_meta: Some(eip712_meta),
         };
 
         // This is a random signature, but that's ok.

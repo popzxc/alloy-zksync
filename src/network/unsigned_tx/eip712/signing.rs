@@ -30,7 +30,7 @@ impl TxEip712 {
             txType: U256::from(self.tx_type() as u8),
             from: address_to_u256(&self.from),
             to: address_to_u256(&self.to),
-            gasLimit: U256::from(self.gas_limit),
+            gasLimit: U256::from(self.gas),
             gasPerPubdataByteLimit: self.eip712_meta.gas_per_pubdata,
             maxFeePerGas: U256::from(self.max_fee_per_gas),
             maxPriorityFeePerGas: U256::from(self.max_priority_fee_per_gas),

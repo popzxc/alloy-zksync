@@ -38,7 +38,7 @@ pub struct TxEip712 {
     /// computation is done and may not be increased
     /// later; formally Tg.
     #[serde(with = "alloy::serde::quantity")]
-    pub gas_limit: u64,
+    pub gas: u64,
     /// A scalar value equal to the maximum
     /// amount of gas that should be used in executing
     /// this transaction. This is paid up-front, before any
@@ -147,7 +147,7 @@ impl TxEip712 {
         let nonce = Decodable::decode(buf)?;
         let max_priority_fee_per_gas = Decodable::decode(buf)?;
         let max_fee_per_gas = Decodable::decode(buf)?;
-        let gas_limit = Decodable::decode(buf)?;
+        let gas = Decodable::decode(buf)?;
         let to = Decodable::decode(buf)?;
         let value = Decodable::decode(buf)?;
         let input = Decodable::decode(buf)?;
@@ -159,7 +159,7 @@ impl TxEip712 {
         let tx = Self {
             chain_id,
             nonce,
-            gas_limit,
+            gas,
             max_fee_per_gas,
             max_priority_fee_per_gas,
             to,
@@ -186,7 +186,7 @@ impl TxEip712 {
         self.nonce.length()
             + self.max_priority_fee_per_gas.length()
             + self.max_fee_per_gas.length()
-            + self.gas_limit.length()
+            + self.gas.length()
             + self.to.length()
             + self.value.length()
             + self.input.length()
@@ -210,7 +210,7 @@ impl TxEip712 {
         self.nonce.encode(out);
         self.max_priority_fee_per_gas.encode(out);
         self.max_fee_per_gas.encode(out);
-        self.gas_limit.encode(out);
+        self.gas.encode(out);
         self.to.encode(out);
         self.value.encode(out);
         self.input.0.encode(out);
@@ -257,7 +257,7 @@ impl Transaction for TxEip712 {
     }
 
     fn gas_limit(&self) -> u64 {
-        self.gas_limit
+        self.gas
     }
 
     fn gas_price(&self) -> Option<u128> {
@@ -392,7 +392,7 @@ impl From<TxEip712> for alloy::rpc::types::transaction::TransactionRequest {
             transaction_type: Some(tx.tx_type() as u8),
             chain_id: Some(tx.chain_id),
             nonce: Some((tx.nonce % U256::from(u64::MAX)).try_into().unwrap()), // TODO: Is decomposed nonce fine here?
-            gas: Some(tx.gas_limit),
+            gas: Some(tx.gas),
             max_fee_per_gas: Some(tx.max_fee_per_gas),
             max_priority_fee_per_gas: Some(tx.max_priority_fee_per_gas),
             to: Some(tx.to.into()),

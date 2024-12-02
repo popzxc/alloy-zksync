@@ -258,7 +258,7 @@ impl From<crate::network::tx_envelope::TxEnvelope> for TransactionRequest {
             },
             crate::network::tx_envelope::TxEnvelope::Eip712(signed) => Self {
                 base: signed.tx().clone().into(),
-                eip_712_meta: Some(signed.tx().clone().eip712_meta),
+                eip_712_meta: signed.tx().clone().eip712_meta,
             },
         }
     }
@@ -456,7 +456,7 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
                 gas: self.base.gas.unwrap(),
                 max_fee_per_gas: self.base.max_fee_per_gas.unwrap(),
                 max_priority_fee_per_gas: self.base.max_priority_fee_per_gas.unwrap(),
-                eip712_meta: self.eip_712_meta.unwrap(),
+                eip712_meta: self.eip_712_meta,
                 from: self.base.from.unwrap(),
                 to,
                 value: self.base.value.unwrap_or_default(),

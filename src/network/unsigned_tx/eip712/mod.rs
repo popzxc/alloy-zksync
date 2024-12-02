@@ -80,7 +80,8 @@ pub struct TxEip712 {
     /// input data of the message call, formally Td.
     pub input: Bytes,
     /// ZKsync-specific fields.
-    pub eip712_meta: Eip712Meta,
+    #[serde(flatten)]
+    pub eip712_meta: Option<Eip712Meta>,
 }
 
 impl TxEip712 {
@@ -166,7 +167,7 @@ impl TxEip712 {
             from,
             value,
             input,
-            eip712_meta,
+            eip712_meta: Some(eip712_meta),
         };
 
         // Context: `SignableTransaction` is commented out for now.
@@ -192,7 +193,7 @@ impl TxEip712 {
             + self.input.length()
             + self.chain_id.length()
             + self.from.length()
-            + self.eip712_meta.length()
+            + self.eip712_meta.as_ref().map(|m| m.length()).unwrap_or_default()
     }
 
     /// Encodes the transaction from RLP bytes, including the signature. This __does not__ encode a
@@ -217,7 +218,9 @@ impl TxEip712 {
         signature.write_rlp_vrs(out, signature.v());
         self.chain_id.encode(out);
         self.from.encode(out);
-        self.eip712_meta.encode(out);
+        if let Some(eip712_meta) = &self.eip712_meta {
+            eip712_meta.encode(out);
+        }
     }
 
     /// Gets the length of the encoded header.

@@ -9,7 +9,13 @@ use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError, PaymasterParams};
 use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+/// Transaction request supporting ZKsync's EIP-712 transaction types.
+///
+/// Unlike `TransactionRequest` for Ethereum network, it would try to use ZKsync-native
+/// EIP712 transaction type by default, unless explicitly overridden. The reason for that
+/// is that EIP712 transactions have the same capabilities as type 0 and EIP1559
+/// transactions, while being cheaper to process.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {
     #[serde(flatten)]
@@ -18,65 +24,173 @@ pub struct TransactionRequest {
     eip_712_meta: Option<Eip712Meta>,
 }
 
-// TODO: Extension trait for `TransactionBuilder`?
+impl Default for TransactionRequest {
+    fn default() -> Self {
+        Self {
+            base: alloy::rpc::types::transaction::TransactionRequest {
+                transaction_type: Some(TxType::Eip712 as u8),
+                ..Default::default()
+            },
+            eip_712_meta: Default::default(),
+        }
+    }
+}
+
 impl TransactionRequest {
+    /// Get the gas per pubdata for the transaction.
     pub fn gas_per_pubdata(&self) -> Option<U256> {
         self.eip_712_meta.as_ref().map(|meta| meta.gas_per_pubdata)
     }
 
+    /// Set the gas per pubdata  for the transaction.
     pub fn set_gas_per_pubdata(&mut self, gas_per_pubdata: U256) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .gas_per_pubdata = gas_per_pubdata;
     }
 
+    /// Builder-pattern method for setting gas per pubdata.
     pub fn with_gas_per_pubdata(mut self, gas_per_pubdata: U256) -> Self {
         self.set_gas_per_pubdata(gas_per_pubdata);
         self
     }
 
-    pub fn set_paymaster(&mut self, paymaster_params: PaymasterParams) {
+    /// Get the factory deps for the transaction.
+    pub fn factory_deps(&self) -> Option<&Vec<Bytes>> {
         self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .paymaster_params = Some(paymaster_params);
+            .as_ref()
+            .map(|meta| meta.factory_deps.as_ref())
     }
 
-    pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
-        self.set_paymaster(paymaster_params);
-        self
-    }
-
+    /// Set the factory deps  for the transaction.
     pub fn set_factory_deps(&mut self, factory_deps: Vec<Bytes>) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .factory_deps = factory_deps;
     }
 
+    /// Builder-pattern method for setting factory deps.
     pub fn with_factory_deps(mut self, factory_deps: Vec<Bytes>) -> Self {
         self.set_factory_deps(factory_deps);
         self
     }
 
+    /// Get the custom signature for the transaction.
+    pub fn custom_signature(&self) -> Option<&Bytes> {
+        self.eip_712_meta
+            .as_ref()
+            .and_then(|meta| meta.custom_signature.as_ref())
+    }
+
+    /// Set the custom signature  for the transaction.
     pub fn set_custom_signature(&mut self, custom_signature: Bytes) {
         self.eip_712_meta
             .get_or_insert_with(Eip712Meta::default)
             .custom_signature = Some(custom_signature);
     }
 
+    /// Builder-pattern method for setting custom signature.
     pub fn with_custom_signature(mut self, custom_signature: Bytes) -> Self {
         self.set_custom_signature(custom_signature);
         self
     }
 
+    /// Get the paymaster params for the transaction.
+    pub fn paymaster_params(&self) -> Option<&PaymasterParams> {
+        self.eip_712_meta
+            .as_ref()
+            .and_then(|meta| meta.paymaster_params.as_ref())
+    }
+
+    /// Set the paymaster params for the transaction.
+    pub fn set_paymaster_params(&mut self, paymaster_params: PaymasterParams) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .paymaster_params = Some(paymaster_params);
+    }
+
+    /// Builder-pattern method for setting paymaster params.
+    pub fn with_paymaster_params(mut self, paymaster_params: PaymasterParams) -> Self {
+        self.set_paymaster_params(paymaster_params);
+        self
+    }
+
+    /// Builder-pattern method for building a ZKsync EIP-712 create2 tranasaction.
+    pub fn with_create2_params(
+        self,
+        salt: B256,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        let bytecode_hash = hash_bytecode(&code)?;
+        let factory_deps = factory_deps
+            .into_iter()
+            .chain(vec![code])
+            .map(Into::into)
+            .collect();
+        let input = crate::contracts::l2::contract_deployer::encode_create2_calldata(
+            salt,
+            bytecode_hash.into(),
+            constructor_data.into(),
+        );
+        Ok(self
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
+            .with_input(input)
+            .with_factory_deps(factory_deps))
+    }
+
+    /// Builder-pattern method for building a ZKsync EIP-712 create tranasaction.
+    pub fn with_create_params(
+        self,
+        code: Vec<u8>,
+        constructor_data: Vec<u8>,
+        factory_deps: Vec<Vec<u8>>,
+    ) -> Result<Self, BytecodeHashError> {
+        let bytecode_hash = hash_bytecode(&code)?;
+        let factory_deps = factory_deps
+            .into_iter()
+            .chain(vec![code])
+            .map(Into::into)
+            .collect();
+        let input = crate::contracts::l2::contract_deployer::encode_create_calldata(
+            bytecode_hash.into(),
+            constructor_data.into(),
+        );
+        Ok(self
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
+            .with_input(input)
+            .with_factory_deps(factory_deps))
+    }
+}
+
+impl TransactionRequest {
+    #[deprecated(note = "use `set_paymaster_params` instead")]
+    pub fn set_paymaster(&mut self, paymaster_params: PaymasterParams) {
+        self.eip_712_meta
+            .get_or_insert_with(Eip712Meta::default)
+            .paymaster_params = Some(paymaster_params);
+    }
+
+    #[deprecated(note = "use `with_paymaster_params` instead")]
+    pub fn with_paymaster(mut self, paymaster_params: PaymasterParams) -> Self {
+        #[allow(deprecated)]
+        self.set_paymaster(paymaster_params);
+        self
+    }
+
+    #[deprecated(note = "use `with_create_params` instead")]
     pub fn zksync_deploy(
         self,
         code: Vec<u8>,
         constructor_data: Vec<u8>,
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
+        #[allow(deprecated)]
         self.zksync_deploy_inner(None, code, constructor_data, factory_deps)
     }
 
+    #[deprecated(note = "use `with_create2_params` instead")]
     pub fn zksync_deploy_with_salt(
         self,
         salt: B256,
@@ -84,22 +198,25 @@ impl TransactionRequest {
         constructor_data: Vec<u8>,
         factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
+        #[allow(deprecated)]
         self.zksync_deploy_inner(Some(salt), code, constructor_data, factory_deps)
     }
 
+    #[deprecated(note = "use `with_create_params` or `with_create2_params` instead")]
     fn zksync_deploy_inner(
-        mut self,
+        self,
         salt: Option<B256>,
         code: Vec<u8>,
         constructor_data: Vec<u8>,
-        mut factory_deps: Vec<Vec<u8>>,
+        factory_deps: Vec<Vec<u8>>,
     ) -> Result<Self, BytecodeHashError> {
-        self.base.transaction_type = Some(TxType::Eip712 as u8);
-
         let bytecode_hash = hash_bytecode(&code)?;
-        factory_deps.push(code);
-        self.base.to = Some(CONTRACT_DEPLOYER_ADDRESS.into());
-        self.base.input = match salt {
+        let factory_deps = factory_deps
+            .into_iter()
+            .chain(vec![code])
+            .map(Into::into)
+            .collect();
+        let input = match salt {
             Some(salt) => crate::contracts::l2::contract_deployer::encode_create2_calldata(
                 salt,
                 bytecode_hash.into(),
@@ -109,12 +226,11 @@ impl TransactionRequest {
                 bytecode_hash.into(),
                 constructor_data.into(),
             ),
-        }
-        .into();
-        self.eip_712_meta
-            .get_or_insert_with(Eip712Meta::default)
-            .factory_deps = factory_deps.into_iter().map(Into::into).collect();
-        Ok(self)
+        };
+        Ok(self
+            .with_to(CONTRACT_DEPLOYER_ADDRESS)
+            .with_input(input)
+            .with_factory_deps(factory_deps))
     }
 }
 

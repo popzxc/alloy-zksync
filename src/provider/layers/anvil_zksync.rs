@@ -10,23 +10,23 @@ use url::Url;
 
 use crate::{
     network::Zksync,
-    node_bindings::{EraTestNode, EraTestNodeInstance},
+    node_bindings::{AnvilZKsync, AnvilZKsyncInstance},
 };
 
-/// A layer that wraps an [`EraTestNode`] config.
+/// A layer that wraps an [`AnvilZKsync`] config.
 ///
-/// The config will be used to spawn an [`EraTestNodeInstance`] when the layer is applied, or when the
-/// user requests any information about the anvil node (e.g. via the [`EraTestNodeLayer::endpoint_url`]
+/// The config will be used to spawn an [`AnvilZKsyncInstance`] when the layer is applied, or when the
+/// user requests any information about the anvil node (e.g. via the [`AnvilZKsyncLayer::endpoint_url`]
 /// method).
 #[derive(Debug, Clone, Default)]
-pub struct EraTestNodeLayer {
-    anvil: EraTestNode,
-    instance: OnceLock<Arc<EraTestNodeInstance>>,
+pub struct AnvilZKsyncLayer {
+    anvil: AnvilZKsync,
+    instance: OnceLock<Arc<AnvilZKsyncInstance>>,
 }
 
-impl EraTestNodeLayer {
+impl AnvilZKsyncLayer {
     /// Starts the anvil instance, or gets a reference to the existing instance.
-    pub fn instance(&self) -> &Arc<EraTestNodeInstance> {
+    pub fn instance(&self) -> &Arc<AnvilZKsyncInstance> {
         self.instance
             .get_or_init(|| Arc::new(self.anvil.clone().spawn()))
     }
@@ -38,8 +38,8 @@ impl EraTestNodeLayer {
     }
 }
 
-impl From<EraTestNode> for EraTestNodeLayer {
-    fn from(anvil: EraTestNode) -> Self {
+impl From<AnvilZKsync> for AnvilZKsyncLayer {
+    fn from(anvil: AnvilZKsync) -> Self {
         Self {
             anvil,
             instance: OnceLock::new(),
@@ -47,36 +47,36 @@ impl From<EraTestNode> for EraTestNodeLayer {
     }
 }
 
-impl<P, T> ProviderLayer<P, T, Zksync> for EraTestNodeLayer
+impl<P, T> ProviderLayer<P, T, Zksync> for AnvilZKsyncLayer
 where
     P: Provider<T, Zksync>,
     T: Transport + Clone,
 {
-    type Provider = EraTestNodeProvider<P, T>;
+    type Provider = AnvilZKsyncProvider<P, T>;
 
     fn layer(&self, inner: P) -> Self::Provider {
         let anvil = self.instance();
-        EraTestNodeProvider::new(inner, anvil.clone())
+        AnvilZKsyncProvider::new(inner, anvil.clone())
     }
 }
 
-/// A provider that wraps an [`EraTestNodeInstance`], preventing the instance from
+/// A provider that wraps an [`AnvilZKsyncInstance`], preventing the instance from
 /// being dropped while the provider is in use.
 #[derive(Clone, Debug)]
-pub struct EraTestNodeProvider<P, T> {
+pub struct AnvilZKsyncProvider<P, T> {
     inner: P,
-    _anvil: Arc<EraTestNodeInstance>,
+    _anvil: Arc<AnvilZKsyncInstance>,
     _pd: PhantomData<fn() -> T>,
 }
 
-impl<P, T> EraTestNodeProvider<P, T>
+impl<P, T> AnvilZKsyncProvider<P, T>
 where
     P: Provider<T, Zksync>,
     T: Transport + Clone,
 {
-    /// Creates a new `EraTestNodeProvider` with the given inner provider and anvil
+    /// Creates a new `AnvilZKsyncProvider` with the given inner provider and anvil
     /// instance.
-    pub fn new(inner: P, _anvil: Arc<EraTestNodeInstance>) -> Self {
+    pub fn new(inner: P, _anvil: Arc<AnvilZKsyncInstance>) -> Self {
         Self {
             inner,
             _anvil,
@@ -85,7 +85,7 @@ where
     }
 }
 
-impl<P, T> Provider<T, Zksync> for EraTestNodeProvider<P, T>
+impl<P, T> Provider<T, Zksync> for AnvilZKsyncProvider<P, T>
 where
     P: Provider<T, Zksync>,
     T: Transport + Clone,

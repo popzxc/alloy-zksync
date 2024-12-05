@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
     // Create a provider with the wallet.
     let provider = zksync_provider()
         .with_recommended_fillers()
-        .on_era_test_node_with_wallet();
+        .on_anvil_zksync_with_wallet();
 
     // Build a transaction to send 100 wei from Alice to Vitalik.
     // The `from` field is automatically filled to the first signer's address (Alice).

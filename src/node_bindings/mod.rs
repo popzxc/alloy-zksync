@@ -1,3 +1,3 @@
-pub use era_test_node::*;
+pub use anvil_zksync::*;
 
-mod era_test_node;
+mod anvil_zksync;

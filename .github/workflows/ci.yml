@@ -2,7 +2,7 @@ name: Rust
 
 on:
   pull_request:
-    branches: [ "*" ]
+    branches: ["*"]
   push:
     branches: ["main"]
 
@@ -49,8 +49,8 @@ jobs:
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.4
 
-      - name: Install era-test-node
-        uses: dutterbutter/era-test-node-action@v1
+      - name: Install anvil-zksync
+        uses: dutterbutter/anvil-zksync-action@v1.0.0
 
       - name: Format
         run: cargo fmt --all -- --check

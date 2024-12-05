@@ -24,7 +24,7 @@ the functionality is added in a way that is aligned with overall `alloy` design,
 specific to the `Zksync` network, or via extension traits (in case of `Provider`, for example).
 
 Similarly to `anvil` bindings, `alloy-zksync` provides bindings for
-[era-test-node](https://github.com/matter-labs/era-test-node).
+[anvil-zksync](https://github.com/matter-labs/anvil-zksync).
 
 For usage, the best reference currently is [examples](./examples/):
 - [basic usage](./examples/showcase.rs),

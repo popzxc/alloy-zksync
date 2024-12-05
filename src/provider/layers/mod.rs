@@ -1,1 +1,1 @@
-pub mod era_test_node;
+pub mod anvil_zksync;

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["zksync_provider"],"mod":["fillers","layers"],"trait":["ProviderBuilderExt","ZksyncProvider"]};

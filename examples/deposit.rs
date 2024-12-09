@@ -5,7 +5,7 @@ use alloy::{
     signers::local::PrivateKeySigner,
 };
 use alloy_zksync::{
-    l1_provider::{zksync_provider, ZksyncProvider, ZksyncProviderWithWallet, ETHER_L1_ADDRESS},
+    provider::{zksync_provider, ZksyncProvider, ZksyncProviderWithWallet, ETHER_L1_ADDRESS},
     wallet::ZksyncWallet,
 };
 use anyhow::Result;

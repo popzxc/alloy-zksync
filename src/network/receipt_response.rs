@@ -9,7 +9,7 @@ use crate::types::*;
 use alloy::eips::eip7702::SignedAuthorization;
 
 /// Transaction receipt type that includes L2 specific fields.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReceiptResponse<T = ReceiptEnvelope<Log>> {
     /// Standard transaction receipt data.

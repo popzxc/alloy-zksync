@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransactionResponse {
     #[serde(flatten)]
     inner: alloy::rpc::types::transaction::Transaction<crate::network::tx_envelope::TxEnvelope>,

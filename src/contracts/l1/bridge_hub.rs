@@ -1,21 +1,3 @@
-use alloy::{
-    primitives::{Address, Bytes, U256},
-    sol_types::SolCall,
-};
-
-#[derive(Debug)]
-pub struct L2TransactionRequestDirectParams {
-    pub chain_id: U256,
-    pub mint_value: U256,
-    pub l2_contract: Address,
-    pub l2_value: U256,
-    pub l2_calldata: Bytes,
-    pub l2_gas_limit: U256,
-    pub l2_gas_per_pubdata_byte_limit: U256,
-    pub factory_deps: Vec<Bytes>,
-    pub refund_recipient: Address,
-}
-
 alloy::sol! {
     #[allow(missing_docs)]
     struct L2TransactionRequestDirect {
@@ -31,6 +13,26 @@ alloy::sol! {
     }
 
     #[allow(missing_docs)]
+    struct L2CanonicalTransaction {
+        uint256 txType;
+        uint256 from;
+        uint256 to;
+        uint256 gasLimit;
+        uint256 gasPerPubdataByteLimit;
+        uint256 maxFeePerGas;
+        uint256 maxPriorityFeePerGas;
+        uint256 paymaster;
+        uint256 nonce;
+        uint256 value;
+        uint256[4] reserved;
+        bytes data;
+        bytes signature;
+        uint256[] factoryDeps;
+        bytes paymasterInput;
+        bytes reservedDynamic;
+    }
+
+    #[allow(missing_docs)]
     #[sol(rpc)]
     contract Bridgehub {
         function requestL2TransactionDirect(
@@ -43,23 +45,13 @@ alloy::sol! {
             uint256 _l2GasLimit,
             uint256 _l2GasPerPubdataByteLimit
         ) external view returns (uint256);
-    }
-}
 
-pub fn encode_request_l2_tx_direct_calldata(
-    request_params: L2TransactionRequestDirectParams,
-) -> Bytes {
-    let request = L2TransactionRequestDirect {
-        chainId: request_params.chain_id,
-        mintValue: request_params.mint_value,
-        l2Contract: request_params.l2_contract,
-        l2Value: request_params.l2_value,
-        l2Calldata: request_params.l2_calldata,
-        l2GasLimit: request_params.l2_gas_limit,
-        l2GasPerPubdataByteLimit: request_params.l2_gas_per_pubdata_byte_limit,
-        factoryDeps: request_params.factory_deps,
-        refundRecipient: request_params.refund_recipient,
-    };
-    let call = Bridgehub::requestL2TransactionDirectCall { request };
-    call.abi_encode().into()
+        event NewPriorityRequest(
+            uint256 txId,
+            bytes32 txHash,
+            uint64 expirationTimestamp,
+            L2CanonicalTransaction transaction,
+            bytes[] factoryDeps
+        );
+    }
 }

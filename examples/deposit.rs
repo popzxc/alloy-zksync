@@ -5,7 +5,7 @@ use alloy::{
     signers::local::PrivateKeySigner,
 };
 use alloy_zksync::{
-    provider::{zksync_provider, ZksyncProvider, ZksyncProviderWithWallet, ETHER_L1_ADDRESS},
+    l1_provider::{zksync_provider, ZksyncProvider, ZksyncProviderWithWallet, ETHER_L1_ADDRESS},
     wallet::ZksyncWallet,
 };
 use anyhow::Result;
@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
             .expect("should parse private key");
     let wallet = EthereumWallet::from(signer.clone());
 
-    let provider = ProviderBuilder::new()
+    let l1_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(wallet)
         .on_http(l1_rpc_url);
@@ -45,14 +45,14 @@ async fn main() -> Result<()> {
     let deposit_amount = U256::from(70000000000000_u64);
     let l1_token_address = ETHER_L1_ADDRESS;
     let l1_tx_receipt = zksync_provider
-        .deposit(l1_token_address, receiver, deposit_amount, &provider)
+        .deposit(l1_token_address, receiver, deposit_amount, &l1_provider)
         .await
         .unwrap();
 
-    let l2_receipt_response = zksync_provider
+    let l2_tx_receipt = zksync_provider
         .wait_for_l1_tx(l1_tx_receipt, None, None)
         .await?;
 
-    println!("L2 deposit transaction receipt: {:#?}", l2_receipt_response);
+    println!("L2 deposit transaction receipt: {:#?}", l2_tx_receipt);
     Ok(())
 }

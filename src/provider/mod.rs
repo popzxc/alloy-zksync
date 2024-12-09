@@ -258,17 +258,17 @@ where
             .into()
     }
 
-    /// Waits for the L1 -> L2 transaction to be committed on L2.
+    /// Waits for the L1 -> L2 transaction to be included into the L2 block.
     ///
     /// ## Parameters
     ///
     /// - `l1_tx_receipt`: receipt of the transaction that initiated an L2 transaction request.
-    /// - `polling_interval_in_seconds`: Optional: polling interval for the L2 tx receipt in seconds.
+    /// - `polling_interval_in_seconds`: Optional: polling interval for getting the L2 tx receipt in seconds.
     /// - `timeout_in_seconds`: Optional: total timeout to wait in seconds.
     ///
     /// ## Returns
     ///
-    /// L2 transaction receipt response. 
+    /// L2 transaction receipt response.
     async fn wait_for_l1_tx(
         &self,
         l1_tx_receipt: L1TransactionReceipt,
@@ -286,7 +286,8 @@ where
 
         let l2_tx_hash = l1_to_l2_tx_log.inner.txHash;
 
-        let polling_interval_in_seconds = polling_interval_in_seconds.unwrap_or(Duration::from_secs(2));
+        let polling_interval_in_seconds =
+            polling_interval_in_seconds.unwrap_or(Duration::from_secs(2));
         let mut timer = interval(polling_interval_in_seconds);
         let start = Instant::now();
 
@@ -321,7 +322,7 @@ const L1_FEE_ESTIMATION_COEF_NUMERATOR: u64 = 12;
 /// in the SDK estimation, ensuring the transaction will be accepted.
 const L1_FEE_ESTIMATION_COEF_DENOMINATOR: u64 = 10;
 
-/// Trait for ZKsync provider with wallet populated
+/// Trait for ZKsync provider with populated wallet
 /// Contains provider methods that need a wallet
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
@@ -330,7 +331,7 @@ pub trait ZksyncProviderWithWallet<T = BoxTransport>:
 where
     T: Transport + Clone,
 {
-    /// Scaling the gas limit to ensure the transaction will be accepted.
+    /// Scales the gas limit to ensure the transaction will be accepted.
     fn scale_l1_gas_limit(l1_gas_limit: u64) -> u64 {
         l1_gas_limit * L1_FEE_ESTIMATION_COEF_NUMERATOR / L1_FEE_ESTIMATION_COEF_DENOMINATOR
     }
@@ -346,8 +347,8 @@ where
     ///
     /// ## Returns
     ///
-    /// L1 transaction receipt response. 
-    /// Hint: use zksync_provider.wait_for_l1_tx method to wait for the corresponding L2 tx to be committed.
+    /// L1 transaction receipt response.
+    /// Hint: use zksync_provider.wait_for_l1_tx method to wait for the corresponding L2 tx to be included into an L2 block.
     async fn deposit<Tr, N, P>(
         &self,
         token_address: Address,

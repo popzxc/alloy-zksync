@@ -349,8 +349,9 @@ where
     ///
     /// ## Returns
     ///
-    /// L1 transaction receipt response.
-    /// Hint: use zksync_provider.wait_for_l1_tx method to wait for the corresponding L2 tx to be included into an L2 block.
+    /// L1TransactionReceipt.
+    /// Hint: use returned L1 transaction receipt to get corresponding L2 transaction and wait for its receipt
+    /// E.g.: deposit_l1_receipt.get_l2_tx()?.with_required_confirmations(1).with_timeout(Some(std::time::Duration::from_secs(60 * 5))).get_receipt()
     async fn deposit<Tr, P>(
         &self,
         token_address: Address,

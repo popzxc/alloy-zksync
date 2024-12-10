@@ -1,24 +1,26 @@
 pub use self::provider_builder_ext::ProviderBuilderExt;
 use crate::{
-    contracts::l1::bridge_hub::{Bridgehub, L2TransactionRequestDirect},
-    network::{receipt_response::ReceiptResponse, transaction_request::TransactionRequest, Zksync},
+    contracts::l1::bridge_hub::{
+        Bridgehub::{self},
+        L2TransactionRequestDirect,
+    },
+    network::{transaction_request::TransactionRequest, Zksync},
     types::*,
 };
 use alloy::{
-    network::{NetworkWallet, TransactionBuilder},
+    network::{Ethereum, NetworkWallet, TransactionBuilder},
     primitives::{Address, Bytes, B256, U256, U64},
     providers::{
         fillers::{ChainIdFiller, JoinFill, NonceFiller, RecommendedFillers},
         utils::Eip1559Estimation,
-        Identity, Provider, ProviderBuilder, ProviderCall, WalletProvider,
+        Identity, PendingTransactionBuilder, Provider, ProviderBuilder, ProviderCall, RootProvider,
+        WalletProvider,
     },
-    rlp::Error,
-    rpc::{client::NoParams, types::TransactionReceipt as L1TransactionReceipt},
+    rpc::{client::NoParams, types::eth::TransactionReceipt},
     transports::{BoxTransport, Transport},
 };
 use fillers::Eip712FeeFiller;
-use std::{collections::HashMap, str::FromStr, time::Duration};
-use tokio::time::{interval, Instant};
+use std::{collections::HashMap, str::FromStr};
 
 pub mod fillers;
 pub mod layers;
@@ -257,70 +259,75 @@ where
             .request("zks_getProof", (address, keys, l1_batch_number))
             .into()
     }
+}
 
-    /// Waits for the L1 -> L2 transaction to be included into the L2 block.
-    ///
-    /// ## Parameters
-    ///
-    /// - `l1_tx_receipt`: receipt of the transaction that initiated an L2 transaction request.
-    /// - `polling_interval_in_seconds`: Optional: polling interval for getting the L2 tx receipt in seconds.
-    /// - `timeout_in_seconds`: Optional: total timeout to wait in seconds.
-    ///
-    /// ## Returns
-    ///
-    /// L2 transaction receipt response.
-    async fn wait_for_l1_tx(
-        &self,
-        l1_tx_receipt: L1TransactionReceipt,
-        polling_interval_in_seconds: Option<Duration>,
-        timeout_in_seconds: Option<Duration>,
-    ) -> Result<ReceiptResponse, Error> {
-        let l1_to_l2_tx_log = l1_tx_receipt
+/// Scales the gas limit to ensure the transaction will be accepted.
+// Gas limit scaling logic is taken from the JS SDK:
+// https://github.com/zksync-sdk/zksync-ethers/blob/64763688d1bb5cee4a4c220c3841b803c74b0d05/src/utils.ts#L1451
+pub fn scale_l1_gas_limit(l1_gas_limit: u64) -> u64 {
+    /// Numerator used in scaling the gas limit to ensure acceptance of `L1->L2` transactions.
+    /// This constant is part of a coefficient calculation to adjust the gas limit to account for variations
+    /// in the SDK estimation, ensuring the transaction will be accepted.
+    const L1_FEE_ESTIMATION_COEF_NUMERATOR: u64 = 12;
+
+    /// Denominator used in scaling the gas limit to ensure acceptance of `L1->L2` transactions.
+    /// This constant is part of a coefficient calculation to adjust the gas limit to account for variations
+    /// in the SDK estimation, ensuring the transaction will be accepted.
+    const L1_FEE_ESTIMATION_COEF_DENOMINATOR: u64 = 10;
+    l1_gas_limit * L1_FEE_ESTIMATION_COEF_NUMERATOR / L1_FEE_ESTIMATION_COEF_DENOMINATOR
+}
+
+/// Enum to describe errors that might occur during L1 -> L2 communication.
+#[derive(Debug, thiserror::Error)]
+pub enum L1CommunicationError {
+    #[error("NewPriorityRequest event log was not found in L1 -> L2 transaction.")]
+    NewPriorityRequestLogNotFound,
+    #[error("Custom L1 -> L2 communication error.")]
+    Custom(&'static str),
+}
+
+/// A wrapper struct to hold L1 transaction receipt and L2 provider
+/// which is used by the associated functions.
+pub struct L1TransactionReceipt<T> {
+    /// Ethereum transaction receipt.
+    inner: TransactionReceipt,
+    /// A reference to the L2 provider.
+    l2_provider: RootProvider<T, Zksync>,
+}
+
+impl<T> L1TransactionReceipt<T>
+where
+    T: Transport + Clone,
+{
+    pub fn new(tx_receipt: TransactionReceipt, l2_provider: RootProvider<T, Zksync>) -> Self {
+        Self {
+            inner: tx_receipt,
+            l2_provider,
+        }
+    }
+
+    pub fn get_receipt(&self) -> &TransactionReceipt {
+        &self.inner
+    }
+
+    pub fn get_l2_tx(&self) -> Result<PendingTransactionBuilder<T, Zksync>, L1CommunicationError> {
+        let l1_to_l2_tx_log = self
+            .inner
             .inner
             .logs()
             .iter()
             .filter_map(|log| log.log_decode::<Bridgehub::NewPriorityRequest>().ok())
-            .next().ok_or(
-                    Error::Custom("Specified L1 tx receipt doesn't contain a NewPriorityRequest event log which is expected for L1 -> L2 transaction. Make sure you pass the correct transaction receipt.")
-                )?;
+            .next()
+            .ok_or(L1CommunicationError::NewPriorityRequestLogNotFound)?;
 
         let l2_tx_hash = l1_to_l2_tx_log.inner.txHash;
 
-        let polling_interval_in_seconds =
-            polling_interval_in_seconds.unwrap_or(Duration::from_secs(2));
-        let mut timer = interval(polling_interval_in_seconds);
-        let start = Instant::now();
-
-        loop {
-            timer.tick().await;
-
-            if let Some(timeout) = timeout_in_seconds {
-                if start.elapsed() >= timeout {
-                    return Err(Error::Custom(
-                        "Error waiting for corresponding L2 tx to be included into the block.",
-                    ));
-                }
-            }
-
-            // Wait for the corresponding L2 transaction to be included into the block.
-            let l2_tx_receipt = self.get_transaction_receipt(l2_tx_hash).await.unwrap();
-
-            if let Some(l2_tx_receipt) = l2_tx_receipt {
-                return Ok(l2_tx_receipt);
-            }
-        }
+        Ok(PendingTransactionBuilder::new(
+            self.l2_provider.clone(),
+            l2_tx_hash,
+        ))
     }
 }
-
-/// Numerator used in scaling the gas limit to ensure acceptance of `L1->L2` transactions.
-/// This constant is part of a coefficient calculation to adjust the gas limit to account for variations
-/// in the SDK estimation, ensuring the transaction will be accepted.
-const L1_FEE_ESTIMATION_COEF_NUMERATOR: u64 = 12;
-
-/// Denominator used in scaling the gas limit to ensure acceptance of `L1->L2` transactions.
-/// This constant is part of a coefficient calculation to adjust the gas limit to account for variations
-/// in the SDK estimation, ensuring the transaction will be accepted.
-const L1_FEE_ESTIMATION_COEF_DENOMINATOR: u64 = 10;
 
 /// Trait for ZKsync provider with populated wallet
 /// Contains provider methods that need a wallet
@@ -331,11 +338,6 @@ pub trait ZksyncProviderWithWallet<T = BoxTransport>:
 where
     T: Transport + Clone,
 {
-    /// Scales the gas limit to ensure the transaction will be accepted.
-    fn scale_l1_gas_limit(l1_gas_limit: u64) -> u64 {
-        l1_gas_limit * L1_FEE_ESTIMATION_COEF_NUMERATOR / L1_FEE_ESTIMATION_COEF_DENOMINATOR
-    }
-
     /// Deposits specified L1 token to the L2 address.
     ///
     /// ## Parameters
@@ -349,22 +351,25 @@ where
     ///
     /// L1 transaction receipt response.
     /// Hint: use zksync_provider.wait_for_l1_tx method to wait for the corresponding L2 tx to be included into an L2 block.
-    async fn deposit<Tr, N, P>(
+    async fn deposit<Tr, P>(
         &self,
         token_address: Address,
         receiver: Address,
         amount: U256,
         l1_provider: &P,
-    ) -> Result<N::ReceiptResponse, Box<dyn std::error::Error>>
+    ) -> Result<L1TransactionReceipt<T>, L1CommunicationError>
     where
         Tr: Transport + Clone,
-        P: alloy::providers::Provider<Tr, N>,
-        N: alloy::network::Network,
+        P: alloy::providers::Provider<Tr, Ethereum>,
     {
         if token_address != ETHER_L1_ADDRESS {
-            todo!("Only ETH deposits are supported as for now.");
+            return Err(L1CommunicationError::Custom(
+                "Deposit for the specified token is not currently supported.",
+            ));
         }
-        let l2_chain_id = self.get_chain_id().await?;
+        let l2_chain_id = self.get_chain_id().await.map_err(|_| {
+            L1CommunicationError::Custom("Error occurred while fetching L2 chain id.")
+        })?;
         let sender = self.wallet().default_signer_address();
         let gas_per_pubdata_limit = U256::from(REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT);
 
@@ -375,19 +380,48 @@ where
             .with_gas_per_pubdata(gas_per_pubdata_limit)
             .with_input(Bytes::from("0x"));
 
-        let estimate_gas_l1_to_l2 = self.estimate_gas_l1_to_l2(estimate_l1_to_l2_tx).await?;
+        let estimate_gas_l1_to_l2 = self
+            .estimate_gas_l1_to_l2(estimate_l1_to_l2_tx)
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom(
+                    "Error occurred while estimating gas for L1 -> L2 transaction.",
+                )
+            })?;
 
-        let bridge_hub_contract_address = self.get_bridgehub_contract().await?.unwrap();
+        let bridge_hub_contract_address = self
+            .get_bridgehub_contract()
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom(
+                    "Error occurred while fetching the bridge hub contract address.",
+                )
+            })?
+            .unwrap();
         let bridge_hub_contract = Bridgehub::new(bridge_hub_contract_address, &l1_provider);
 
-        let max_priority_fee_per_gas = l1_provider.get_max_priority_fee_per_gas().await?;
+        // fees adjustment is taken from the JS SDK:
+        // https://github.com/zksync-sdk/zksync-ethers/blob/64763688d1bb5cee4a4c220c3841b803c74b0d05/src/adapters.ts#L2069
+        let max_priority_fee_per_gas =
+            l1_provider
+                .get_max_priority_fee_per_gas()
+                .await
+                .map_err(|_| {
+                    L1CommunicationError::Custom(
+                        "Error occurred while fetching L1 max_priority_fee_per_gas.",
+                    )
+                })?;
         let base_l1_fees_data = l1_provider
             .estimate_eip1559_fees(Some(|base_fee_per_gas, _| Eip1559Estimation {
                 max_fee_per_gas: base_fee_per_gas * 3 / 2,
                 max_priority_fee_per_gas: 0,
             }))
-            .await?;
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom("Error occurred while estimating L1 base fees.")
+            })?;
         let max_fee_per_gas = base_l1_fees_data.max_fee_per_gas + max_priority_fee_per_gas;
+        //
 
         let l2_base_cost = bridge_hub_contract
             .l2TransactionBaseCost(
@@ -397,7 +431,12 @@ where
                 gas_per_pubdata_limit,
             )
             .call()
-            .await?
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom(
+                    "Error occurred while estimating L2 transaction base cost.",
+                )
+            })?
             ._0;
 
         let l1_value = l2_base_cost + amount;
@@ -416,17 +455,39 @@ where
             })
             .value(l1_value);
         let l2_tx_request = l2_tx_request_builder.clone().into_transaction_request();
-        let l1_tx_gas_estimation = l1_provider.estimate_gas(&l2_tx_request).await?;
-        let l1_gas_limit = Self::scale_l1_gas_limit(l1_tx_gas_estimation);
+        let l1_tx_gas_estimation =
+            l1_provider
+                .estimate_gas(&l2_tx_request)
+                .await
+                .map_err(|_| {
+                    L1CommunicationError::Custom(
+                        "Error occurred while estimating gas limit for the L1 transaction.",
+                    )
+                })?;
+        let l1_gas_limit = scale_l1_gas_limit(l1_tx_gas_estimation);
         let l1_tx_receipt = l2_tx_request_builder
             .gas(l1_gas_limit)
             .max_fee_per_gas(max_fee_per_gas)
             .max_priority_fee_per_gas(max_priority_fee_per_gas)
             .send()
-            .await?
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom(
+                    "Error occurred while sending the L1 -> L2 deposit transaction.",
+                )
+            })?
             .get_receipt()
-            .await?;
-        Ok(l1_tx_receipt)
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom(
+                    "Error occurred while sending the L1 -> L2 deposit transaction receipt.",
+                )
+            })?;
+
+        Ok(L1TransactionReceipt::new(
+            l1_tx_receipt,
+            self.root().clone(),
+        ))
     }
 }
 

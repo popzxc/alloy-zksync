@@ -5,7 +5,7 @@ use alloy::{
     signers::local::PrivateKeySigner,
 };
 use alloy_zksync::{
-    provider::{zksync_provider, ZksyncProvider, ZksyncProviderWithWallet, ETHER_L1_ADDRESS},
+    provider::{zksync_provider, ZksyncProviderWithWallet, ETHER_L1_ADDRESS},
     wallet::ZksyncWallet,
 };
 use anyhow::Result;
@@ -44,15 +44,18 @@ async fn main() -> Result<()> {
     // 0.00007 ETH
     let deposit_amount = U256::from(70000000000000_u64);
     let l1_token_address = ETHER_L1_ADDRESS;
-    let l1_tx_receipt = zksync_provider
+    let deposit_l1_receipt = zksync_provider
         .deposit(l1_token_address, receiver, deposit_amount, &l1_provider)
         .await
         .unwrap();
 
-    let l2_tx_receipt = zksync_provider
-        .wait_for_l1_tx(l1_tx_receipt, None, None)
+    let deposit_l2_receipt = deposit_l1_receipt
+        .get_l2_tx()?
+        .with_required_confirmations(1)
+        .with_timeout(Some(std::time::Duration::from_secs(60 * 5)))
+        .get_receipt()
         .await?;
 
-    println!("L2 deposit transaction receipt: {:#?}", l2_tx_receipt);
+    println!("L2 deposit transaction receipt: {:#?}", deposit_l2_receipt);
     Ok(())
 }

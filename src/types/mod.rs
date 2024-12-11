@@ -204,9 +204,25 @@ pub struct FeeParamsV2 {
     pub conversion_ratio: BaseTokenConversionRatio,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct FeeModelConfigV1 {
+    /// The minimal acceptable L2 gas price, i.e. the price that should include the cost of computation/proving as well
+    /// as potentially premium for congestion.
+    /// Unlike the `V2`, this price will be directly used as the `fair_l2_gas_price` in the bootloader.
+    pub minimal_l2_gas_price: u64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct FeeParamsV1 {
+    pub config: FeeModelConfigV1,
+    pub l1_gas_price: u64,
+}
+
 /// Response type for `zks_getFeeParams`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 pub enum FeeParams {
+    V1(FeeParamsV1),
     V2(FeeParamsV2),
 }
 

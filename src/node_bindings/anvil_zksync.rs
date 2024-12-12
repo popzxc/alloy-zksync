@@ -148,13 +148,12 @@ pub enum AnvilZKsyncError {
 pub struct AnvilZKsync {
     program: Option<PathBuf>,
     port: Option<u16>,
-    // TODO
-    // // If the block_time is an integer, f64::to_string() will output without a decimal point
-    // // which allows this to be backwards compatible.
-    // block_time: Option<f64>,
+    // If the block_time is an integer, f64::to_string() will output without a decimal point
+    // which allows this to be backwards compatible.
+    block_time: Option<f64>,
+    no_mine: bool,
     chain_id: Option<ChainId>,
-    // TODO
-    // mnemonic: Option<String>,
+    mnemonic: Option<String>,
     fork: Option<String>,
     fork_block_number: Option<u64>,
     args: Vec<String>,
@@ -220,19 +219,23 @@ impl AnvilZKsync {
         self
     }
 
-    // TODO
-    // /// Sets the mnemonic which will be used when the `anvil-zksync` instance is launched.
-    // pub fn mnemonic<T: Into<String>>(mut self, mnemonic: T) -> Self {
-    //     self.mnemonic = Some(mnemonic.into());
-    //     self
-    // }
+    /// Sets the no-mine status which will be used when the `era_test_node` instance is launched.
+    pub const fn no_mine(mut self) -> Self {
+        self.no_mine = true;
+        self
+    }
 
-    // TODO
-    // /// Sets the block-time in seconds which will be used when the `anvil-zksync` instance is launched.
-    // pub const fn block_time(mut self, block_time: u64) -> Self {
-    //     self.block_time = Some(block_time as f64);
-    //     self
-    // }
+    /// Sets the mnemonic which will be used when the `anvil-zksync` instance is launched.
+    pub fn mnemonic<T: Into<String>>(mut self, mnemonic: T) -> Self {
+        self.mnemonic = Some(mnemonic.into());
+        self
+    }
+
+    /// Sets the block-time in seconds which will be used when the `anvil-zksync` instance is launched.
+    pub const fn block_time(mut self, block_time: u64) -> Self {
+        self.block_time = Some(block_time as f64);
+        self
+    }
 
     // TODO
     // /// Sets the block-time in sub-seconds which will be used when the `anvil-zksync` instance is launched.
@@ -307,17 +310,21 @@ impl AnvilZKsync {
             cmd.arg("--port").arg(port.to_string());
         }
 
-        // if let Some(mnemonic) = self.mnemonic {
-        //     cmd.arg("-m").arg(mnemonic);
-        // }
+        if let Some(mnemonic) = self.mnemonic {
+            cmd.arg("-m").arg(mnemonic);
+        }
 
         if let Some(chain_id) = self.chain_id {
             cmd.arg("--chain-id").arg(chain_id.to_string());
         }
 
-        // if let Some(block_time) = self.block_time {
-        //     cmd.arg("-b").arg(block_time.to_string());
-        // }
+        if let Some(block_time) = self.block_time {
+            cmd.arg("-b").arg(block_time.to_string());
+        }
+
+        if self.no_mine {
+            cmd.arg("--no-mine");
+        }
 
         cmd.args(self.args);
 
@@ -432,15 +439,14 @@ mod tests {
         assert_eq!(anvil_zksync.port(), PORT);
     }
 
-    // // TODO: AFAIU anvil-zksync doesn't support setting block time.
-    // #[test]
-    // fn assert_block_time_is_natural_number() {
-    //     //This test is to ensure that older versions of anvil-zksync are supported
-    //     //even though the block time is a f64, it should be passed as a whole number
-    //     let anvil_zksync = AnvilZKsync::new().block_time(12);
-    //     assert_eq!(anvil_zksync.block_time.unwrap().to_string(), "12");
-    //     let _ = anvil_zksync.spawn();
-    // }
+    #[test]
+    fn assert_block_time_is_natural_number() {
+        // This test is to ensure that older versions of era_test_node are supported
+        // even though the block time is a f64, it should be passed as a whole number
+        let era_test_node = AnvilZKsync::new().block_time(12);
+        assert_eq!(era_test_node.block_time.unwrap().to_string(), "12");
+        let _ = era_test_node.spawn();
+    }
 
     // #[test]
     // fn can_launch_anvil_zksync_with_sub_seconds_block_time() {
@@ -508,5 +514,46 @@ mod tests {
     fn assert_chain_id_without_rpc() {
         let anvil_zksync = AnvilZKsync::new().spawn();
         assert_eq!(anvil_zksync.chain_id(), 260);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_mnemonic_usage() {
+        let test_mnemonic =
+            "nasty genius bright property zero practice critic draft turkey cigar option south";
+
+        let anvil_zksync = AnvilZKsync::new().mnemonic(test_mnemonic).spawn();
+
+        let expected_addresses = vec![
+            "0xe99f84afb6fcad9ebe0e1970fc7632ec00b3a5dd",
+            "0x2d0472332f336d00d71a9055a04315684466b7ab",
+            "0x10293d5d0127eaa1838779a54833f2c76a3893db",
+            "0x574e479338bb22b856feb3df7296c65247c99a5a",
+            "0x68256d3e5eae3ee2bc1cf4172c4fdc1f76d51b4d",
+            "0x00c0b6d136ab72156734f08c704704f8130f5062",
+            "0xa6004bae3cd480660e17542a83fe164b8e128362",
+            "0xa845c4de08761a3d93e0aea1006bfc05de02f6ef",
+            "0x76454a9658bec53daee3c5fc1d369ea757ebd5cb",
+            "0xcda2c6614a1014d27f6dfd9b8323d688931f69b9",
+        ];
+
+        let derived_addresses: Vec<_> = anvil_zksync
+            .addresses()
+            .iter()
+            .map(|address| format!("{:#x}", address))
+            .collect();
+
+        assert_eq!(
+            derived_addresses, expected_addresses,
+            "The derived addresses do not match the expected addresses"
+        );
+
+        drop(anvil_zksync);
+    }
+
+    #[test]
+    fn can_launch_era_test_node_with_no_mine() {
+        let anvil_zksync = AnvilZKsync::new().no_mine().spawn();
+
+        drop(anvil_zksync);
     }
 }

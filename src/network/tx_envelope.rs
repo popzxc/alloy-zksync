@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 use super::unsigned_tx::eip712::TxEip712;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    into = "serde_from::TaggedTxEnvelope",
+    from = "serde_from::MaybeTaggedTxEnvelope"
+)]
 pub enum TxEnvelope {
     Native(alloy::consensus::TxEnvelope),
     Eip712(Signed<TxEip712>),
@@ -299,5 +303,123 @@ impl alloy::consensus::Transaction for TxEnvelope {
 
     fn authorization_list(&self) -> Option<&[alloy::eips::eip7702::SignedAuthorization]> {
         self.as_ref().authorization_list()
+    }
+}
+
+mod serde_from {
+    //! NB: Why do we need this?
+    //!
+    //! We are following the same approach as [`alloy::consensus::TxEnvelope`] but with an additional
+    //! ZKsync-specific transaction type (`type: "0x71"`).
+    //!
+    //! Because the tag may be missing, we need an abstraction over tagged (with
+    //! type) and untagged (always legacy). This is [`MaybeTaggedTxEnvelope`].
+    //!
+    //! The tagged variant is [`TaggedTxEnvelope`], which always has a type tag.
+    //!
+    //! We serialize via [`TaggedTxEnvelope`] and deserialize via
+    //! [`MaybeTaggedTxEnvelope`].
+    use crate::network::tx_envelope::TxEnvelope;
+    use crate::network::unsigned_tx::eip712::TxEip712;
+    use alloy::consensus::{Signed, TxEip1559, TxEip2930, TxEip4844Variant, TxEip7702, TxLegacy};
+
+    #[derive(Debug, serde::Deserialize)]
+    #[serde(untagged)]
+    pub(crate) enum MaybeTaggedTxEnvelope {
+        Tagged(TaggedTxEnvelope),
+        Untagged {
+            #[serde(
+                default,
+                rename = "type",
+                deserialize_with = "alloy::serde::reject_if_some"
+            )]
+            _ty: Option<()>,
+            #[serde(flatten, with = "alloy::consensus::transaction::signed_legacy_serde")]
+            tx: Signed<TxLegacy>,
+        },
+    }
+
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
+    #[serde(tag = "type")]
+    pub(crate) enum TaggedTxEnvelope {
+        // Native transaction types below
+        #[serde(
+            rename = "0x0",
+            alias = "0x00",
+            with = "alloy::consensus::transaction::signed_legacy_serde"
+        )]
+        Legacy(Signed<TxLegacy>),
+        #[serde(rename = "0x1", alias = "0x01")]
+        Eip2930(Signed<TxEip2930>),
+        #[serde(rename = "0x2", alias = "0x02")]
+        Eip1559(Signed<TxEip1559>),
+        #[serde(rename = "0x3", alias = "0x03")]
+        Eip4844(Signed<TxEip4844Variant>),
+        #[serde(rename = "0x4", alias = "0x04")]
+        Eip7702(Signed<TxEip7702>),
+        // Custom ZKsync transaction type
+        #[serde(rename = "0x71")]
+        Eip712(Signed<TxEip712>),
+    }
+
+    impl From<MaybeTaggedTxEnvelope> for TxEnvelope {
+        fn from(value: MaybeTaggedTxEnvelope) -> Self {
+            match value {
+                MaybeTaggedTxEnvelope::Tagged(tagged) => tagged.into(),
+                MaybeTaggedTxEnvelope::Untagged { tx, .. } => {
+                    Self::Native(alloy::consensus::TxEnvelope::Legacy(tx))
+                }
+            }
+        }
+    }
+
+    impl From<TaggedTxEnvelope> for TxEnvelope {
+        fn from(value: TaggedTxEnvelope) -> Self {
+            match value {
+                TaggedTxEnvelope::Legacy(signed) => {
+                    Self::Native(alloy::consensus::TxEnvelope::Legacy(signed))
+                }
+                TaggedTxEnvelope::Eip2930(signed) => {
+                    Self::Native(alloy::consensus::TxEnvelope::Eip2930(signed))
+                }
+                TaggedTxEnvelope::Eip1559(signed) => {
+                    Self::Native(alloy::consensus::TxEnvelope::Eip1559(signed))
+                }
+                TaggedTxEnvelope::Eip4844(signed) => {
+                    Self::Native(alloy::consensus::TxEnvelope::Eip4844(signed))
+                }
+                TaggedTxEnvelope::Eip7702(signed) => {
+                    Self::Native(alloy::consensus::TxEnvelope::Eip7702(signed))
+                }
+                TaggedTxEnvelope::Eip712(signed) => Self::Eip712(signed),
+            }
+        }
+    }
+
+    impl From<TxEnvelope> for TaggedTxEnvelope {
+        fn from(value: TxEnvelope) -> Self {
+            match value {
+                TxEnvelope::Native(alloy::consensus::TxEnvelope::Legacy(signed)) => {
+                    Self::Legacy(signed)
+                }
+                TxEnvelope::Native(alloy::consensus::TxEnvelope::Eip2930(signed)) => {
+                    Self::Eip2930(signed)
+                }
+                TxEnvelope::Native(alloy::consensus::TxEnvelope::Eip1559(signed)) => {
+                    Self::Eip1559(signed)
+                }
+                TxEnvelope::Native(alloy::consensus::TxEnvelope::Eip4844(signed)) => {
+                    Self::Eip4844(signed)
+                }
+                TxEnvelope::Native(alloy::consensus::TxEnvelope::Eip7702(signed)) => {
+                    Self::Eip7702(signed)
+                }
+                TxEnvelope::Native(tx) => panic!(
+                    "Unsupported native Ethereum transaction type: {}",
+                    tx.tx_type()
+                ),
+                TxEnvelope::Eip712(signed) => Self::Eip712(signed),
+            }
+        }
     }
 }

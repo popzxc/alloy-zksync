@@ -9,18 +9,28 @@ impl TxEip712 {
     fn as_sol_tx(&self) -> Transaction {
         let paymaster = self
             .eip712_meta
-            .paymaster_params
             .as_ref()
+            .and_then(|m| m.paymaster_params.as_ref())
             .map(|p| p.paymaster)
             .unwrap_or(Address::ZERO);
         let paymaster_input = self
             .eip712_meta
-            .paymaster_params
             .as_ref()
+            .and_then(|m| m.paymaster_params.as_ref())
             .map(|p| p.paymaster_input.clone())
             .unwrap_or_default();
-        let mut factory_deps_hashes = Vec::with_capacity(self.eip712_meta.factory_deps.len() * 32);
-        for dep in &self.eip712_meta.factory_deps {
+        let mut factory_deps_hashes = Vec::with_capacity(
+            self.eip712_meta
+                .as_ref()
+                .map(|m| m.factory_deps.len() * 32)
+                .unwrap_or_default(),
+        );
+        for dep in self
+            .eip712_meta
+            .as_ref()
+            .map(|m| &m.factory_deps)
+            .unwrap_or(&Vec::new())
+        {
             // TODO: Unwrap should be safe here?
             let hash = hash_bytecode(dep).unwrap();
             factory_deps_hashes.push(hash.into());
@@ -30,8 +40,12 @@ impl TxEip712 {
             txType: U256::from(self.tx_type() as u8),
             from: address_to_u256(&self.from),
             to: address_to_u256(&self.to),
-            gasLimit: U256::from(self.gas_limit),
-            gasPerPubdataByteLimit: self.eip712_meta.gas_per_pubdata,
+            gasLimit: U256::from(self.gas),
+            gasPerPubdataByteLimit: self
+                .eip712_meta
+                .as_ref()
+                .map(|m| m.gas_per_pubdata)
+                .unwrap_or_default(),
             maxFeePerGas: U256::from(self.max_fee_per_gas),
             maxPriorityFeePerGas: U256::from(self.max_priority_fee_per_gas),
             paymaster: address_to_u256(&paymaster),

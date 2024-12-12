@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(
+    into = "serde_from::TransactionEither",
+    from = "serde_from::TransactionEither"
+)]
 pub struct TransactionResponse {
     #[serde(flatten)]
     inner: alloy::rpc::types::transaction::Transaction<crate::network::tx_envelope::TxEnvelope>,
@@ -109,5 +113,79 @@ impl alloy::network::TransactionResponse for TransactionResponse {
 impl AsRef<crate::network::tx_envelope::TxEnvelope> for TransactionResponse {
     fn as_ref(&self) -> &crate::network::tx_envelope::TxEnvelope {
         &self.inner.inner
+    }
+}
+
+mod serde_from {
+    //! NB: Why do we need this?
+    //!
+    //! Helper module for serializing and deserializing ZKsync [`TransactionResponse`].
+    //!
+    //! This is needed because we might need to deserialize the `from` field into both
+    //! [`field@alloy::rpc::types::transaction::Transaction::from`] and [`field@TxEip712::from`].
+    use crate::network::transaction_response::TransactionResponse;
+    use crate::network::tx_envelope::TxEnvelope;
+    use crate::network::unsigned_tx::eip712::TxEip712;
+    use alloy::consensus::Signed;
+    use alloy::primitives::BlockHash;
+    use serde::{Deserialize, Serialize};
+
+    /// Exactly the same thing as [`alloy::rpc::types::transaction::Transaction`] but without the
+    /// `from` field. We need it because [`TxEnvelope::Eip712`] can consume `from` first thus
+    /// failing the entire deserialization process.
+    #[derive(Serialize, Deserialize)]
+    pub struct TransactionWithoutFrom {
+        #[serde(flatten)]
+        pub inner: Signed<TxEip712>,
+        pub block_hash: Option<BlockHash>,
+        pub block_number: Option<u64>,
+        pub transaction_index: Option<u64>,
+        pub effective_gas_price: Option<u128>,
+    }
+
+    /// (De)serializes both regular [`alloy::rpc::types::transaction::Transaction`] and [`TransactionWithoutFrom`].
+    #[derive(Serialize, Deserialize)]
+    #[serde(untagged)]
+    pub enum TransactionEither {
+        Regular(alloy::rpc::types::transaction::Transaction<TxEnvelope>),
+        WithoutFrom(TransactionWithoutFrom),
+    }
+
+    impl From<TransactionEither> for TransactionResponse {
+        fn from(value: TransactionEither) -> Self {
+            match value {
+                TransactionEither::Regular(tx) => TransactionResponse { inner: tx },
+                TransactionEither::WithoutFrom(value) => {
+                    let from = value.inner.tx().from;
+                    TransactionResponse {
+                        inner: alloy::rpc::types::transaction::Transaction {
+                            inner: TxEnvelope::Eip712(value.inner),
+                            block_hash: value.block_hash,
+                            block_number: value.block_number,
+                            transaction_index: value.transaction_index,
+                            effective_gas_price: value.effective_gas_price,
+                            from,
+                        },
+                    }
+                }
+            }
+        }
+    }
+
+    impl From<TransactionResponse> for TransactionEither {
+        fn from(value: TransactionResponse) -> Self {
+            match value.inner.inner {
+                TxEnvelope::Native(_) => TransactionEither::Regular(value.inner),
+                TxEnvelope::Eip712(signed) => {
+                    TransactionEither::WithoutFrom(TransactionWithoutFrom {
+                        inner: signed,
+                        block_hash: value.inner.block_hash,
+                        block_number: value.inner.block_number,
+                        transaction_index: value.inner.transaction_index,
+                        effective_gas_price: value.inner.effective_gas_price,
+                    })
+                }
+            }
+        }
     }
 }

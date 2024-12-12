@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct HeaderResponse {
+    hash: alloy::primitives::BlockHash,
     #[serde(flatten)]
     inner: crate::network::header::Header,
 }
@@ -98,7 +99,7 @@ impl alloy::consensus::BlockHeader for HeaderResponse {
 
 impl alloy::network::primitives::HeaderResponse for HeaderResponse {
     fn hash(&self) -> alloy::primitives::BlockHash {
-        self.inner.hash_slow()
+        self.hash
     }
 }
 

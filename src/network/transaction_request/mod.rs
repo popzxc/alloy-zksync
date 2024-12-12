@@ -115,7 +115,7 @@ impl TransactionRequest {
         self
     }
 
-    /// Builder-pattern method for building a ZKsync EIP-712 create2 tranasaction.
+    /// Builder-pattern method for building a ZKsync EIP-712 create2 transaction.
     pub fn with_create2_params(
         self,
         salt: B256,
@@ -140,7 +140,7 @@ impl TransactionRequest {
             .with_factory_deps(factory_deps))
     }
 
-    /// Builder-pattern method for building a ZKsync EIP-712 create tranasaction.
+    /// Builder-pattern method for building a ZKsync EIP-712 create transaction.
     pub fn with_create_params(
         self,
         code: Vec<u8>,

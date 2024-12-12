@@ -219,8 +219,9 @@ impl AnvilZKsync {
         self.chain_id = Some(chain_id);
         self
     }
+
     // TODO
-    /// Sets the mnemonic which will be used when the `anvil-zksync` instance is launched.
+    // /// Sets the mnemonic which will be used when the `anvil-zksync` instance is launched.
     // pub fn mnemonic<T: Into<String>>(mut self, mnemonic: T) -> Self {
     //     self.mnemonic = Some(mnemonic.into());
     //     self

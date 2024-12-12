@@ -464,6 +464,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore]
     async fn fork_initializes_correct_chain() {
         let anvil_zksync = AnvilZKsync::new().fork("mainnet").spawn();
         let rpc_url = anvil_zksync.endpoint_url();

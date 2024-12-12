@@ -225,6 +225,7 @@ impl AnvilZKsync {
     //     self.mnemonic = Some(mnemonic.into());
     //     self
     // }
+
     // TODO
     // /// Sets the block-time in seconds which will be used when the `anvil-zksync` instance is launched.
     // pub const fn block_time(mut self, block_time: u64) -> Self {

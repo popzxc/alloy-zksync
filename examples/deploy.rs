@@ -27,8 +27,8 @@ sol! {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Create provider connected to the `era_test_node`.
-    // Note that you can manually spawn and configure the `era_test_node`, e.g. if you don't want the instance
+    // Create provider connected to the `anvil-zksync`.
+    // Note that you can manually spawn and configure the `anvil-zksync`, e.g. if you don't want the instance
     // to be spawned implicitly and/or you don't want it to be attached to a single provider.
     let provider = zksync_provider()
         .with_recommended_fillers()

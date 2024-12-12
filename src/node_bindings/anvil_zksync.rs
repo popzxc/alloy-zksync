@@ -226,15 +226,15 @@ impl AnvilZKsync {
     //     self
     // }
     // TODO
-    // /// Sets the block-time in seconds which will be used when the `era_test_node` instance is launched.
+    // /// Sets the block-time in seconds which will be used when the `anvil-zksync` instance is launched.
     // pub const fn block_time(mut self, block_time: u64) -> Self {
     //     self.block_time = Some(block_time as f64);
     //     self
     // }
 
     // TODO
-    // /// Sets the block-time in sub-seconds which will be used when the `era_test_node` instance is launched.
-    // /// Older versions of `era_test_node` do not support sub-second block times.
+    // /// Sets the block-time in sub-seconds which will be used when the `anvil-zksync` instance is launched.
+    // /// Older versions of `anvil-zksync` do not support sub-second block times.
     // pub const fn block_time_f64(mut self, block_time: f64) -> Self {
     //     self.block_time = Some(block_time);
     //     self

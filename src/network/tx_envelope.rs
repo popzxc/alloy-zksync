@@ -1,4 +1,4 @@
-use alloy::consensus::Signed;
+use alloy::consensus::{Signed, Typed2718};
 use alloy::network::eip2718::{Decodable2718, Encodable2718};
 use alloy::rlp::{Encodable, Header};
 use serde::{Deserialize, Serialize};
@@ -180,6 +180,15 @@ impl TxEnvelope {
     }
 }
 
+impl Typed2718 for TxEnvelope {
+    fn ty(&self) -> u8 {
+        match self {
+            Self::Native(inner) => inner.ty(),
+            Self::Eip712(inner) => inner.tx().tx_type() as u8,
+        }
+    }
+}
+
 impl Encodable2718 for TxEnvelope {
     fn type_flag(&self) -> Option<u8> {
         match self {
@@ -281,16 +290,16 @@ impl alloy::consensus::Transaction for TxEnvelope {
         self.as_ref().kind()
     }
 
+    fn is_create(&self) -> bool {
+        self.as_ref().is_create()
+    }
+
     fn value(&self) -> alloy::primitives::U256 {
         self.as_ref().value()
     }
 
     fn input(&self) -> &alloy::primitives::Bytes {
         self.as_ref().input()
-    }
-
-    fn ty(&self) -> u8 {
-        self.as_ref().ty()
     }
 
     fn access_list(&self) -> Option<&alloy::rpc::types::AccessList> {

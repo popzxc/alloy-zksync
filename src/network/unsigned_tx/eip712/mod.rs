@@ -1,4 +1,4 @@
-use alloy::consensus::{SignableTransaction, Signed, Transaction};
+use alloy::consensus::{SignableTransaction, Signed, Transaction, Typed2718};
 use alloy::primitives::PrimitiveSignature as Signature;
 use alloy::primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
 use alloy::rlp::{BufMut, Decodable, Encodable, Header};
@@ -253,6 +253,12 @@ impl TxEip712 {
     // }
 }
 
+impl Typed2718 for TxEip712 {
+    fn ty(&self) -> u8 {
+        self.tx_type() as u8
+    }
+}
+
 impl Transaction for TxEip712 {
     fn chain_id(&self) -> Option<ChainId> {
         Some(self.chain_id)
@@ -273,6 +279,10 @@ impl Transaction for TxEip712 {
 
     fn to(&self) -> Option<Address> {
         self.to.into()
+    }
+
+    fn is_create(&self) -> bool {
+        matches!(self.kind(), TxKind::Create)
     }
 
     fn value(&self) -> U256 {
@@ -297,10 +307,6 @@ impl Transaction for TxEip712 {
 
     fn priority_fee_or_price(&self) -> u128 {
         todo!()
-    }
-
-    fn ty(&self) -> u8 {
-        self.tx_type() as u8
     }
 
     fn access_list(&self) -> Option<&alloy::rpc::types::AccessList> {

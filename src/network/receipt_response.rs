@@ -46,7 +46,7 @@ impl ReceiptResponse {
     }
 }
 
-impl<T: TxReceipt<Log>> alloy::network::ReceiptResponse for ReceiptResponse<T> {
+impl<T: TxReceipt<Log = Log>> alloy::network::ReceiptResponse for ReceiptResponse<T> {
     /// Address of the created contract, or `None` if the transaction was not a deployment.
     fn contract_address(&self) -> Option<Address> {
         self.inner.contract_address()

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ETHER_L1_ADDRESS","REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT"],"enum":["L1CommunicationError"],"fn":["scale_l1_gas_limit","zksync_provider"],"mod":["fillers","layers"],"struct":["L1TransactionReceipt"],"trait":["ProviderBuilderExt","ZksyncProvider","ZksyncProviderWithWallet"]};

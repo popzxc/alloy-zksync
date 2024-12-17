@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["header","header_response","receipt_envelope","receipt_response","transaction_request","transaction_response","tx_envelope","tx_type","unsigned_tx"],"struct":["Zksync"]};

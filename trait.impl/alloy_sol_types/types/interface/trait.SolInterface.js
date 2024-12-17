@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"alloy_zksync":[["impl SolInterface for <a class=\"enum\" href=\"alloy_zksync/contracts/l1/bridge_hub/Bridgehub/enum.BridgehubCalls.html\" title=\"enum alloy_zksync::contracts::l1::bridge_hub::Bridgehub::BridgehubCalls\">BridgehubCalls</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -10,12 +10,6 @@ pub struct TransactionResponse {
     inner: alloy::rpc::types::transaction::Transaction<crate::network::tx_envelope::TxEnvelope>,
 }
 
-// impl alloy::consensus::Typed2718 for TransactionResponse {
-//     fn ty(&self) -> u8 {
-//         self.inner.inner.tx_type() as u8
-//     }
-// }
-
 impl alloy::consensus::Transaction for TransactionResponse {
     fn chain_id(&self) -> Option<alloy::primitives::ChainId> {
         self.inner.chain_id()

@@ -5,7 +5,7 @@ use alloy::{
     signers::local::PrivateKeySigner,
 };
 use alloy_zksync::{
-    provider::{zksync_provider, ZksyncProviderWithWallet, ETHER_L1_ADDRESS},
+    provider::{zksync_provider, DepositRequest, ZksyncProviderWithWallet},
     wallet::ZksyncWallet,
 };
 use anyhow::Result;
@@ -43,9 +43,11 @@ async fn main() -> Result<()> {
     let receiver = address!("a61464658AfeAf65CccaaFD3a512b69A83B77618");
     // 0.00007 ETH
     let deposit_amount = U256::from(70000000000000_u64);
-    let l1_token_address = ETHER_L1_ADDRESS;
     let deposit_l1_receipt = zksync_provider
-        .deposit(l1_token_address, receiver, deposit_amount, &l1_provider)
+        .deposit(
+            &DepositRequest::new(deposit_amount).with_receiver(receiver),
+            &l1_provider,
+        )
         .await
         .unwrap();
 

@@ -13,6 +13,19 @@ alloy::sol! {
     }
 
     #[allow(missing_docs)]
+    struct L2TransactionRequestTwoBridges {
+        uint256 chainId;
+        uint256 mintValue;
+        uint256 l2Value;
+        uint256 l2GasLimit;
+        uint256 l2GasPerPubdataByteLimit;
+        address refundRecipient;
+        address secondBridgeAddress;
+        uint256 secondBridgeValue;
+        bytes secondBridgeCalldata;
+    }
+
+    #[allow(missing_docs)]
     struct L2CanonicalTransaction {
         uint256 txType;
         uint256 from;
@@ -37,6 +50,10 @@ alloy::sol! {
     contract Bridgehub {
         function requestL2TransactionDirect(
             L2TransactionRequestDirect memory request
+        ) external payable returns (bytes32 canonicalTxHash);
+
+        function requestL2TransactionTwoBridges(
+            L2TransactionRequestTwoBridges calldata _request
         ) external payable returns (bytes32 canonicalTxHash);
 
         function l2TransactionBaseCost(

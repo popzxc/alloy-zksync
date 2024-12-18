@@ -495,7 +495,7 @@ where
     ///
     /// ## Returns
     ///
-    /// Gas data for the transaction which contains gas limit and base cost for the L2 bridge transaction.
+    /// Gas data for the  L2 bridge transaction which contains gas limit and tx base cost.
     async fn get_bridge_l2_tx_gas_data<Tr, P>(
         &self,
         bridge_hub_contract: &Bridgehub::BridgehubInstance<Tr, P, Ethereum>,
@@ -600,13 +600,11 @@ where
                 .await?;
 
             let erc20_contract = ERC20::new(deposit_request.token, l1_provider);
-
             let token_data = encode_token_data_for_bridge(&erc20_contract)
                 .await
                 .map_err(|_| {
                     L1CommunicationError::Custom("Error while encoding ERC20 token data.")
                 })?;
-
             let l2_finalize_deposit_calldata = encode_finalize_deposit_calldata(
                 sender,
                 receiver,
@@ -628,26 +626,6 @@ where
                     deposit_request.gas_per_pubdata_limit,
                 )
                 .await?;
-
-            let bridge_calldata = encode_deposit_token_calldata(
-                deposit_request.token,
-                deposit_request.amount,
-                receiver,
-            );
-            let l2_tx_request_builder = bridge_hub_contract
-                .requestL2TransactionTwoBridges(L2TransactionRequestTwoBridges {
-                    chainId: l2_chain_id,
-                    mintValue: l2_tx_fee.tx_base_cost,
-                    l2Value: U256::from(0),
-                    l2GasLimit: l2_tx_fee.gas_limit,
-                    l2GasPerPubdataByteLimit: deposit_request.gas_per_pubdata_limit,
-                    refundRecipient: sender,
-                    secondBridgeAddress: l1_bridge_address,
-                    secondBridgeValue: U256::from(0),
-                    secondBridgeCalldata: bridge_calldata,
-                })
-                .from(sender)
-                .value(l2_tx_fee.tx_base_cost);
 
             let token_allowance = erc20_contract
                 .allowance(sender, l1_bridge_address)
@@ -688,6 +666,26 @@ where
                     )
                     })?;
             }
+
+            let bridge_calldata = encode_deposit_token_calldata(
+                deposit_request.token,
+                deposit_request.amount,
+                receiver,
+            );
+            let l2_tx_request_builder = bridge_hub_contract
+                .requestL2TransactionTwoBridges(L2TransactionRequestTwoBridges {
+                    chainId: l2_chain_id,
+                    mintValue: l2_tx_fee.tx_base_cost,
+                    l2Value: U256::from(0),
+                    l2GasLimit: l2_tx_fee.gas_limit,
+                    l2GasPerPubdataByteLimit: deposit_request.gas_per_pubdata_limit,
+                    refundRecipient: sender,
+                    secondBridgeAddress: l1_bridge_address,
+                    secondBridgeValue: U256::from(0),
+                    secondBridgeCalldata: bridge_calldata,
+                })
+                .from(sender)
+                .value(l2_tx_fee.tx_base_cost);
             let l1_gas_limit = get_gas_limit_for_l1_tx(&l2_tx_request_builder, l1_provider).await?;
             let l1_tx_receipt = l2_tx_request_builder
                 .max_fee_per_gas(max_fee_per_gas)

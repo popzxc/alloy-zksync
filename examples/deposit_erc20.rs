@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
     // https://github.com/matter-labs/local-setup/blob/main/rich-wallets.json
     let receiver = address!("a61464658AfeAf65CccaaFD3a512b69A83B77618");
     // 0.00007 tokens
-    let deposit_amount = U256::from(40000000000000_u64);
+    let deposit_amount = U256::from(70000000000000_u64);
     let deposit_l1_receipt = zksync_provider
         .deposit(
             &DepositRequest::new(deposit_amount)

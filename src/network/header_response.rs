@@ -95,6 +95,10 @@ impl alloy::consensus::BlockHeader for HeaderResponse {
     fn requests_hash(&self) -> Option<alloy::primitives::B256> {
         self.inner.requests_hash()
     }
+
+    fn target_blobs_per_block(&self) -> Option<u64> {
+        self.inner.target_blobs_per_block()
+    }
 }
 
 impl alloy::network::primitives::HeaderResponse for HeaderResponse {

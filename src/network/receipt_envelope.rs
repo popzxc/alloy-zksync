@@ -1,8 +1,9 @@
 use core::fmt;
 
-use alloy::consensus::{AnyReceiptEnvelope, TxReceipt, TxType};
+use alloy::consensus::{TxReceipt, TxType};
 use alloy::network::eip2718::{Decodable2718, Eip2718Error, Encodable2718};
 use alloy::primitives::Log;
+use alloy_consensus_any::AnyReceiptEnvelope;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -15,10 +16,12 @@ pub enum ReceiptEnvelope<T = Log> {
     Eip712(AnyReceiptEnvelope<T>),
 }
 
-impl<T> TxReceipt<T> for ReceiptEnvelope<T>
+impl<T> TxReceipt for ReceiptEnvelope<T>
 where
     T: Clone + fmt::Debug + PartialEq + Eq + Send + Sync,
 {
+    type Log = T;
+
     fn status_or_post_state(&self) -> alloy::consensus::Eip658Value {
         match self {
             ReceiptEnvelope::Native(re) => re.status_or_post_state(),
@@ -84,7 +87,7 @@ impl Decodable2718 for ReceiptEnvelope {
         match tx_type_result {
             Ok(_) => alloy::consensus::ReceiptEnvelope::typed_decode(ty, buf)
                 .map(ReceiptEnvelope::Native),
-            Err(_) => alloy::consensus::AnyReceiptEnvelope::typed_decode(ty, buf)
+            Err(_) => alloy_consensus_any::AnyReceiptEnvelope::typed_decode(ty, buf)
                 .map(ReceiptEnvelope::Eip712),
         }
     }
@@ -95,7 +98,7 @@ impl Decodable2718 for ReceiptEnvelope {
         match alloy::consensus::ReceiptEnvelope::fallback_decode(buf) {
             Ok(envelope) => Ok(ReceiptEnvelope::Native(envelope)),
             Err(_) => Ok(ReceiptEnvelope::Eip712(
-                alloy::consensus::AnyReceiptEnvelope::fallback_decode(buf).unwrap(),
+                AnyReceiptEnvelope::fallback_decode(buf).unwrap(),
             )),
         }
     }

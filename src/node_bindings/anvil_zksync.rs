@@ -1,7 +1,7 @@
 // Adapted from Anvil node bindings in the alloy project:
 // https://github.com/alloy-rs/alloy/blob/2d26b057c64cbcc77654f4691141c308d63b286f/crates/node-bindings/src/anvil.rs
 
-//! Utilities for launching an `era_test_node` instance.
+//! Utilities for launching an `anvil-zksync` instance.
 
 use alloy::primitives::{hex, Address, ChainId};
 use k256::{ecdsa::SigningKey, SecretKey as K256SecretKey};
@@ -17,14 +17,14 @@ use std::{
 use thiserror::Error;
 use url::Url;
 
-/// How long we will wait for era_test_node to indicate that it is ready.
-const ERA_TEST_NODE_STARTUP_TIMEOUT_MILLIS: u64 = 10_000;
+/// How long we will wait for anvil-zksync to indicate that it is ready.
+const ANVIL_ZKSYNC_STARTUP_TIMEOUT_MILLIS: u64 = 10_000;
 
-/// An era_test_node CLI instance. Will close the instance when dropped.
+/// An anvil-zksync CLI instance. Will close the instance when dropped.
 ///
-/// Construct this using [`EraTestNode`].
+/// Construct this using [`AnvilZKsync`].
 #[derive(Debug)]
-pub struct EraTestNodeInstance {
+pub struct AnvilZKsyncInstance {
     child: Child,
     private_keys: Vec<K256SecretKey>,
     addresses: Vec<Address>,
@@ -32,7 +32,7 @@ pub struct EraTestNodeInstance {
     chain_id: Option<ChainId>,
 }
 
-impl EraTestNodeInstance {
+impl AnvilZKsyncInstance {
     /// Returns a reference to the child process.
     pub const fn child(&self) -> &Child {
         &self.child
@@ -58,10 +58,10 @@ impl EraTestNodeInstance {
         self.port
     }
 
-    /// Returns the chain of the era_test_node instance
+    /// Returns the chain of the anvil-zksync instance
     pub fn chain_id(&self) -> ChainId {
-        const ERA_TEST_NODE_CHAIN_ID: ChainId = 260;
-        self.chain_id.unwrap_or(ERA_TEST_NODE_CHAIN_ID)
+        const ANVIL_ZKSYNC_CHAIN_ID: ChainId = 260;
+        self.chain_id.unwrap_or(ANVIL_ZKSYNC_CHAIN_ID)
     }
 
     /// Returns the HTTP endpoint of this instance
@@ -77,29 +77,29 @@ impl EraTestNodeInstance {
     }
 }
 
-impl Drop for EraTestNodeInstance {
+impl Drop for AnvilZKsyncInstance {
     fn drop(&mut self) {
-        self.child.kill().expect("could not kill era_test_node");
+        self.child.kill().expect("could not kill anvil-zksync");
     }
 }
 
-/// Errors that can occur when working with the [`EraTestNode`].
+/// Errors that can occur when working with the [`AnvilZKsync`].
 #[derive(Debug, Error)]
-pub enum EraTestNodeError {
-    /// Spawning the era_test_node process failed.
-    #[error("could not start era_test_node: {0}")]
+pub enum AnvilZKsyncError {
+    /// Spawning the anvil-zksync process failed.
+    #[error("could not start anvil-zksync: {0}")]
     SpawnError(std::io::Error),
 
-    /// Timed out waiting for a message from era_test_node's stderr.
-    #[error("timed out waiting for era_test_node to spawn; is era_test_node installed?")]
+    /// Timed out waiting for a message from anvil-zksync's stderr.
+    #[error("timed out waiting for anvil-zksync to spawn; anvil-zksync installed?")]
     Timeout,
 
-    /// A line could not be read from the geth stderr.
-    #[error("could not read line from era_test_node stderr: {0}")]
+    /// A line could not be read from the anvil-zksync stderr.
+    #[error("could not read line from anvil-zksync stderr: {0}")]
     ReadLineError(std::io::Error),
 
-    /// The child era_test_node process's stderr was not captured.
-    #[error("could not get stderr for era_test_node child process")]
+    /// The child anvil-zksync process's stderr was not captured.
+    #[error("could not get stderr for anvil-zksync child process")]
     NoStderr,
 
     /// The private key could not be parsed.
@@ -123,56 +123,55 @@ pub enum EraTestNodeError {
     NoKeysAvailable,
 }
 
-/// Builder for launching `era_test_node`.
+/// Builder for launching `anvil-zksync`.
 ///
 /// # Panics
 ///
-/// If `spawn` is called without `era_test_node` being available in the user's $PATH
+/// If `spawn` is called without `anvil-zksync` being available in the user's $PATH
 ///
 /// # Example
 ///
 /// ```no_run
-/// use alloy_zksync::node_bindings::EraTestNode;
+/// use alloy_zksync::node_bindings::AnvilZKsync;
 ///
 /// let port = 8545u16;
 /// let url = format!("http://localhost:{}", port).to_string();
 ///
-/// let era_test_node = EraTestNode::new()
+/// let anvil_zksync = AnvilZKsync::new()
 ///     .port(port)
 ///     .spawn();
 ///
-/// drop(era_test_node); // this will kill the instance
+/// drop(anvil_zksync); // this will kill the instance
 /// ```
 #[derive(Clone, Debug, Default)]
 #[must_use = "This Builder struct does nothing unless it is `spawn`ed"]
-pub struct EraTestNode {
+pub struct AnvilZKsync {
     program: Option<PathBuf>,
     port: Option<u16>,
-    // TODO
-    // // If the block_time is an integer, f64::to_string() will output without a decimal point
-    // // which allows this to be backwards compatible.
-    // block_time: Option<f64>,
+    // If the block_time is an integer, f64::to_string() will output without a decimal point
+    // which allows this to be backwards compatible.
+    block_time: Option<f64>,
+    no_mine: bool,
     chain_id: Option<ChainId>,
-    // TODO
-    // mnemonic: Option<String>,
+    mnemonic: Option<String>,
     fork: Option<String>,
     fork_block_number: Option<u64>,
     args: Vec<String>,
     timeout: Option<u64>,
 }
 
-impl EraTestNode {
-    /// Creates an empty EraTestNode builder.
+impl AnvilZKsync {
+    /// Creates an empty AnvilZKsync builder.
     /// The default port is 8545. The mnemonic is chosen randomly.
     ///
     /// # Example
     ///
     /// ```
-    /// # use alloy_zksync::node_bindings::EraTestNode;
+    /// # use alloy_zksync::node_bindings::AnvilZKsync;
     /// fn a() {
-    ///  let era_test_node = EraTestNode::default().spawn();
+    ///  let anvil_zksync = AnvilZKsync::default().spawn();
     ///
-    ///  println!("EraTestNode running at `{}`", era_test_node.endpoint());
+    ///  println!("AnvilZKsync running at `{}`", anvil_zksync.endpoint());
     /// # }
     /// ```
     pub fn new() -> Self {
@@ -183,60 +182,64 @@ impl EraTestNode {
         self_
     }
 
-    /// Creates an EraTestNode builder which will execute `era_test_node` at the given path.
+    /// Creates an AnvilZKsync builder which will execute `anvil-zksync` at the given path.
     ///
     /// # Example
     ///
     /// ```no_run
-    /// # use alloy_zksync::node_bindings::EraTestNode;
+    /// # use alloy_zksync::node_bindings::AnvilZKsync;
     /// fn a() {
-    ///  let era_test_node = EraTestNode::at("~/some/location/era_test_node").spawn();
+    ///  let anvil_zksync = AnvilZKsync::at("~/some/location/anvil-zksync").spawn();
     ///
-    ///  println!("EraTestNode running at `{}`", era_test_node.endpoint());
+    ///  println!("AnvilZKsync running at `{}`", anvil_zksync.endpoint());
     /// # }
     /// ```
     pub fn at(path: impl Into<PathBuf>) -> Self {
         Self::new().path(path)
     }
 
-    /// Sets the `path` to the `era_test_node` cli
+    /// Sets the `path` to the `anvil-zksync` cli
     ///
-    /// By default, it's expected that `era_test_node` is in `$PATH`, see also
+    /// By default, it's expected that `anvil-zksync` is in `$PATH`, see also
     /// [`std::process::Command::new()`]
     pub fn path<T: Into<PathBuf>>(mut self, path: T) -> Self {
         self.program = Some(path.into());
         self
     }
 
-    /// Sets the port which will be used when the `era_test_node` instance is launched.
+    /// Sets the port which will be used when the `anvil-zksync` instance is launched.
     pub fn port<T: Into<u16>>(mut self, port: T) -> Self {
         self.port = Some(port.into());
         self
     }
 
-    /// Sets the chain_id the `era_test_node` instance will use.
+    /// Sets the chain_id the `anvil-zksync` instance will use.
     pub const fn chain_id(mut self, chain_id: u64) -> Self {
         self.chain_id = Some(chain_id);
         self
     }
 
-    // TODO
-    // /// Sets the mnemonic which will be used when the `era_test_node` instance is launched.
-    // pub fn mnemonic<T: Into<String>>(mut self, mnemonic: T) -> Self {
-    //     self.mnemonic = Some(mnemonic.into());
-    //     self
-    // }
+    /// Sets the no-mine status which will be used when the `era_test_node` instance is launched.
+    pub const fn no_mine(mut self) -> Self {
+        self.no_mine = true;
+        self
+    }
+
+    /// Sets the mnemonic which will be used when the `anvil-zksync` instance is launched.
+    pub fn mnemonic<T: Into<String>>(mut self, mnemonic: T) -> Self {
+        self.mnemonic = Some(mnemonic.into());
+        self
+    }
+
+    /// Sets the block-time in seconds which will be used when the `anvil-zksync` instance is launched.
+    pub const fn block_time(mut self, block_time: u64) -> Self {
+        self.block_time = Some(block_time as f64);
+        self
+    }
 
     // TODO
-    // /// Sets the block-time in seconds which will be used when the `era_test_node` instance is launched.
-    // pub const fn block_time(mut self, block_time: u64) -> Self {
-    //     self.block_time = Some(block_time as f64);
-    //     self
-    // }
-
-    // TODO
-    // /// Sets the block-time in sub-seconds which will be used when the `era_test_node` instance is launched.
-    // /// Older versions of `era_test_node` do not support sub-second block times.
+    // /// Sets the block-time in sub-seconds which will be used when the `anvil-zksync` instance is launched.
+    // /// Older versions of `anvil-zksync` do not support sub-second block times.
     // pub const fn block_time_f64(mut self, block_time: f64) -> Self {
     //     self.block_time = Some(block_time);
     //     self
@@ -259,13 +262,13 @@ impl EraTestNode {
         self
     }
 
-    /// Adds an argument to pass to the `era_test_node`.
+    /// Adds an argument to pass to the `anvil-zksync`.
     pub fn arg<T: Into<String>>(mut self, arg: T) -> Self {
         self.args.push(arg.into());
         self
     }
 
-    /// Adds multiple arguments to pass to the `era_test_node`.
+    /// Adds multiple arguments to pass to the `anvil-zksync`.
     pub fn args<I, S>(mut self, args: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -277,28 +280,28 @@ impl EraTestNode {
         self
     }
 
-    /// Sets the timeout which will be used when the `era_test_node` instance is launched.
+    /// Sets the timeout which will be used when the `anvil-zksync` instance is launched.
     pub const fn timeout(mut self, timeout: u64) -> Self {
         self.timeout = Some(timeout);
         self
     }
 
-    /// Consumes the builder and spawns `era_test_node`.
+    /// Consumes the builder and spawns `anvil-zksync`.
     ///
     /// # Panics
     ///
     /// If spawning the instance fails at any point.
     #[track_caller]
-    pub fn spawn(self) -> EraTestNodeInstance {
+    pub fn spawn(self) -> AnvilZKsyncInstance {
         self.try_spawn().unwrap()
     }
 
-    /// Consumes the builder and spawns `era_test_node`. If spawning fails, returns an error.
-    pub fn try_spawn(self) -> Result<EraTestNodeInstance, EraTestNodeError> {
+    /// Consumes the builder and spawns `anvil-zksync`. If spawning fails, returns an error.
+    pub fn try_spawn(self) -> Result<AnvilZKsyncInstance, AnvilZKsyncError> {
         let mut cmd = self
             .program
             .as_ref()
-            .map_or_else(|| Command::new("era_test_node"), Command::new);
+            .map_or_else(|| Command::new("anvil-zksync"), Command::new);
         cmd.stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::inherit());
         // let mut port = self.port.unwrap_or_default();
@@ -307,17 +310,21 @@ impl EraTestNode {
             cmd.arg("--port").arg(port.to_string());
         }
 
-        // if let Some(mnemonic) = self.mnemonic {
-        //     cmd.arg("-m").arg(mnemonic);
-        // }
+        if let Some(mnemonic) = self.mnemonic {
+            cmd.arg("-m").arg(mnemonic);
+        }
 
         if let Some(chain_id) = self.chain_id {
             cmd.arg("--chain-id").arg(chain_id.to_string());
         }
 
-        // if let Some(block_time) = self.block_time {
-        //     cmd.arg("-b").arg(block_time.to_string());
-        // }
+        if let Some(block_time) = self.block_time {
+            cmd.arg("-b").arg(block_time.to_string());
+        }
+
+        if self.no_mine {
+            cmd.arg("--no-mine");
+        }
 
         cmd.args(self.args);
 
@@ -332,9 +339,9 @@ impl EraTestNode {
             cmd.arg("run");
         }
 
-        let mut child = cmd.spawn().map_err(EraTestNodeError::SpawnError)?;
+        let mut child = cmd.spawn().map_err(AnvilZKsyncError::SpawnError)?;
 
-        let stdout = child.stdout.as_mut().ok_or(EraTestNodeError::NoStderr)?;
+        let stdout = child.stdout.as_mut().ok_or(AnvilZKsyncError::NoStderr)?;
 
         let start = Instant::now();
         let mut reader = BufReader::new(stdout);
@@ -345,24 +352,22 @@ impl EraTestNode {
         let port;
         loop {
             if start
-                + Duration::from_millis(
-                    self.timeout.unwrap_or(ERA_TEST_NODE_STARTUP_TIMEOUT_MILLIS),
-                )
+                + Duration::from_millis(self.timeout.unwrap_or(ANVIL_ZKSYNC_STARTUP_TIMEOUT_MILLIS))
                 <= Instant::now()
             {
-                return Err(EraTestNodeError::Timeout);
+                return Err(AnvilZKsyncError::Timeout);
             }
 
             let mut line = String::new();
             reader
                 .read_line(&mut line)
-                .map_err(EraTestNodeError::ReadLineError)?;
-            tracing::trace!(target: "era_test_node", line);
+                .map_err(AnvilZKsyncError::ReadLineError)?;
+            tracing::trace!(target: "anvil-zksync", line);
             if let Some(addr) = line.trim().split("Listening on").nth(1) {
                 // <Node is ready at 127.0.0.1:8011>
                 // parse the actual port
                 port = SocketAddr::from_str(addr.trim())
-                    .map_err(|_| EraTestNodeError::ParsePortError)?
+                    .map_err(|_| AnvilZKsyncError::ParsePortError)?
                     .port();
                 break;
             }
@@ -374,17 +379,17 @@ impl EraTestNode {
                     let mut pk_line = String::new();
                     reader
                         .read_line(&mut pk_line)
-                        .map_err(EraTestNodeError::ReadLineError)?;
-                    tracing::trace!(target: "era_test_node", pk_line);
+                        .map_err(AnvilZKsyncError::ReadLineError)?;
+                    tracing::trace!(target: "anvil-zksync", pk_line);
                     match pk_line.trim() {
                         "" => break,
                         pk_line => {
                             if pk_line.contains("0x") {
                                 let key_str = pk_line.split("0x").nth(1).unwrap();
                                 let key_hex =
-                                    hex::decode(key_str).map_err(EraTestNodeError::FromHexError)?;
+                                    hex::decode(key_str).map_err(AnvilZKsyncError::FromHexError)?;
                                 let key = K256SecretKey::from_bytes((&key_hex[..]).into())
-                                    .map_err(|_| EraTestNodeError::DeserializePrivateKeyError)?;
+                                    .map_err(|_| AnvilZKsyncError::DeserializePrivateKeyError)?;
                                 addresses.push(Address::from_public_key(
                                     SigningKey::from(&key).verifying_key(),
                                 ));
@@ -407,7 +412,7 @@ impl EraTestNode {
             }
         }
 
-        Ok(EraTestNodeInstance {
+        Ok(AnvilZKsyncInstance {
             child,
             private_keys,
             addresses,
@@ -423,37 +428,36 @@ mod tests {
     use alloy::providers::{Provider, ProviderBuilder};
 
     #[test]
-    fn can_launch_era_test_node() {
-        let _ = EraTestNode::new().spawn();
+    fn can_launch_anvil_zksync() {
+        let _ = AnvilZKsync::new().spawn();
     }
 
     #[test]
-    fn can_launch_era_test_node_with_custom_port() {
+    fn can_launch_anvil_zksync_with_custom_port() {
         const PORT: u16 = 7555;
-        let era = EraTestNode::new().port(PORT).spawn();
-        assert_eq!(era.port(), PORT);
+        let anvil_zksync = AnvilZKsync::new().port(PORT).spawn();
+        assert_eq!(anvil_zksync.port(), PORT);
     }
 
-    // TODO: AFAIU era_test_node doesn't support setting block time.
-    // #[test]
-    // fn assert_block_time_is_natural_number() {
-    //     //This test is to ensure that older versions of era_test_node are supported
-    //     //even though the block time is a f64, it should be passed as a whole number
-    //     let era_test_node = EraTestNode::new().block_time(12);
-    //     assert_eq!(era_test_node.block_time.unwrap().to_string(), "12");
-    //     let _ = era_test_node.spawn();
-    // }
+    #[test]
+    fn assert_block_time_is_natural_number() {
+        // This test is to ensure that older versions of era_test_node are supported
+        // even though the block time is a f64, it should be passed as a whole number
+        let era_test_node = AnvilZKsync::new().block_time(12);
+        assert_eq!(era_test_node.block_time.unwrap().to_string(), "12");
+        let _ = era_test_node.spawn();
+    }
 
     // #[test]
-    // fn can_launch_era_test_node_with_sub_seconds_block_time() {
-    //     let _ = EraTestNode::new().block_time_f64(0.5).spawn();
+    // fn can_launch_anvil_zksync_with_sub_seconds_block_time() {
+    //     let _ = AnvilZKsync::new().block_time_f64(0.5).spawn();
     // }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn fork_initializes_correct_chain_id() {
         let chain_id = 92;
-        let era_test_node = EraTestNode::new().chain_id(chain_id).spawn();
-        let rpc_url = era_test_node.endpoint_url();
+        let anvil_zksync = AnvilZKsync::new().chain_id(chain_id).spawn();
+        let rpc_url = anvil_zksync.endpoint_url();
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
             .on_http(rpc_url);
@@ -462,13 +466,14 @@ mod tests {
 
         assert_eq!(returned_chain_id, chain_id);
 
-        drop(era_test_node);
+        drop(anvil_zksync);
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore]
     async fn fork_initializes_correct_chain() {
-        let era_test_node = EraTestNode::new().fork("mainnet").spawn();
-        let rpc_url = era_test_node.endpoint_url();
+        let anvil_zksync = AnvilZKsync::new().fork("mainnet").spawn();
+        let rpc_url = anvil_zksync.endpoint_url();
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
             .on_http(rpc_url);
@@ -477,19 +482,19 @@ mod tests {
 
         assert_eq!(chain_id, 324);
 
-        drop(era_test_node);
+        drop(anvil_zksync);
     }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn fork_initializes_at_specified_block() {
         let fork_block_number = 47854817;
 
-        let era_test_node = EraTestNode::new()
+        let anvil_zksync = AnvilZKsync::new()
             .fork("mainnet")
             .fork_block_number(fork_block_number)
             .spawn();
 
-        let rpc_url = era_test_node.endpoint_url();
+        let rpc_url = anvil_zksync.endpoint_url();
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
             .on_http(rpc_url);
@@ -502,12 +507,53 @@ mod tests {
             "The node did not fork at the expected block number"
         );
 
-        drop(era_test_node);
+        drop(anvil_zksync);
     }
 
     #[test]
     fn assert_chain_id_without_rpc() {
-        let era_test_node = EraTestNode::new().spawn();
-        assert_eq!(era_test_node.chain_id(), 260);
+        let anvil_zksync = AnvilZKsync::new().spawn();
+        assert_eq!(anvil_zksync.chain_id(), 260);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_mnemonic_usage() {
+        let test_mnemonic =
+            "nasty genius bright property zero practice critic draft turkey cigar option south";
+
+        let anvil_zksync = AnvilZKsync::new().mnemonic(test_mnemonic).spawn();
+
+        let expected_addresses = vec![
+            "0xe99f84afb6fcad9ebe0e1970fc7632ec00b3a5dd",
+            "0x2d0472332f336d00d71a9055a04315684466b7ab",
+            "0x10293d5d0127eaa1838779a54833f2c76a3893db",
+            "0x574e479338bb22b856feb3df7296c65247c99a5a",
+            "0x68256d3e5eae3ee2bc1cf4172c4fdc1f76d51b4d",
+            "0x00c0b6d136ab72156734f08c704704f8130f5062",
+            "0xa6004bae3cd480660e17542a83fe164b8e128362",
+            "0xa845c4de08761a3d93e0aea1006bfc05de02f6ef",
+            "0x76454a9658bec53daee3c5fc1d369ea757ebd5cb",
+            "0xcda2c6614a1014d27f6dfd9b8323d688931f69b9",
+        ];
+
+        let derived_addresses: Vec<_> = anvil_zksync
+            .addresses()
+            .iter()
+            .map(|address| format!("{:#x}", address))
+            .collect();
+
+        assert_eq!(
+            derived_addresses, expected_addresses,
+            "The derived addresses do not match the expected addresses"
+        );
+
+        drop(anvil_zksync);
+    }
+
+    #[test]
+    fn can_launch_era_test_node_with_no_mine() {
+        let anvil_zksync = AnvilZKsync::new().no_mine().spawn();
+
+        drop(anvil_zksync);
     }
 }

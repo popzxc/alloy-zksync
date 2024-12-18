@@ -432,7 +432,7 @@ where
     ///
     /// ## Parameters
     ///
-    /// - `deposit_request`: to get bridge addresses for.
+    /// - `deposit_request`: deposit request to get bridge addresses for.
     /// - `l2_chain_id`: L2 chain id.
     /// - `l1_provider`: L1 provider.
     ///

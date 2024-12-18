@@ -16,6 +16,7 @@ use crate::{
     utils::apply_l1_to_l2_alias,
 };
 use alloy::{
+    contract::{CallBuilder, CallDecoder},
     network::{Ethereum, NetworkWallet, TransactionBuilder},
     primitives::{Address, Bytes, B256, U256, U64},
     providers::{
@@ -285,6 +286,26 @@ pub fn scale_l1_gas_limit(l1_gas_limit: u64) -> u64 {
     l1_gas_limit * L1_FEE_ESTIMATION_COEF_NUMERATOR / L1_FEE_ESTIMATION_COEF_DENOMINATOR
 }
 
+async fn get_gas_limit_for_l1_tx<Tr, P, D, Pr>(
+    tx_builder: &CallBuilder<Tr, P, D, Ethereum>,
+    l1_provider: &Pr,
+) -> Result<u64, L1CommunicationError>
+where
+    Tr: Transport + Clone,
+    Pr: alloy::providers::Provider<Tr, Ethereum>,
+    D: CallDecoder,
+    CallBuilder<Tr, P, D, Ethereum>: Clone,
+{
+    let tx_request = tx_builder.clone().into_transaction_request();
+    let l1_tx_gas_estimation = l1_provider.estimate_gas(&tx_request).await.map_err(|_| {
+        L1CommunicationError::Custom(
+            "Error occurred while estimating gas limit for the L1 transaction.",
+        )
+    })?;
+    let l1_gas_limit = scale_l1_gas_limit(l1_tx_gas_estimation);
+    Ok(l1_gas_limit)
+}
+
 /// Enum to describe errors that might occur during L1 -> L2 communication.
 #[derive(Debug, thiserror::Error)]
 pub enum L1CommunicationError {
@@ -389,6 +410,12 @@ impl DepositRequest {
     }
 }
 
+/// Type to represent gas limit and transaction base cost for the bridge L2 transaction.
+#[derive(Clone, Debug)]
+pub struct BridgeL2TxGasData {
+    pub gas_limit: U256,
+    pub tx_base_cost: U256,
+}
 /// Trait for ZKsync provider with populated wallet
 /// Contains provider methods that need a wallet
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
@@ -398,6 +425,20 @@ pub trait ZksyncProviderWithWallet<T = BoxTransport>:
 where
     T: Transport + Clone,
 {
+    /// Returns l1 and l2 bridge addresses for the deposit request.
+    /// If deposit_request.bridge_address is None, takes both addresses using get_bridge_contracts method.
+    /// If deposit_request.bridge_address is defined, calls bridge.l2BridgeAddress
+    /// to get corresponding l2 bridge address and returns both.
+    ///
+    /// ## Parameters
+    ///
+    /// - `deposit_request`: to get bridge addresses for.
+    /// - `l2_chain_id`: L2 chain id.
+    /// - `l1_provider`: L1 provider.
+    ///
+    /// ## Returns
+    ///
+    /// A tuple with l1 and l2 bridge addresses for the deposit request.
     async fn get_bridge_addresses_for_deposit<Tr, P>(
         &self,
         deposit_request: &DepositRequest,
@@ -410,7 +451,7 @@ where
     {
         let (l1_bridge_address, l2_bridge_address) = match deposit_request.bridge_address {
             Some(l1_bridge_address) => {
-                let l1_bridge = L1Bridge::new(l1_bridge_address, &l1_provider);
+                let l1_bridge = L1Bridge::new(l1_bridge_address, l1_provider);
                 let l2_bridge_address = l1_bridge
                     .l2BridgeAddress(l2_chain_id)
                     .call()
@@ -441,13 +482,64 @@ where
         };
         Ok((l1_bridge_address, l2_bridge_address))
     }
+
+    /// Returns gas data for the bridge L2 transaction.
+    ///
+    /// ## Parameters
+    ///
+    /// - `bridge_hub_contract`: an instance of the bridge hub contract.
+    /// - `l1_to_l2_tx`: transaction request, to calculate gas limit and base cost for.
+    /// - `l2_chain_id`: L2 chain id.
+    /// - `max_fee_per_gas`: max fee per gas.
+    /// - `gas_per_pubdata_limit` - gas per pubdata limit.
+    ///
+    /// ## Returns
+    ///
+    /// Gas data for the transaction which contains gas limit and base cost for the L2 bridge transaction.
+    async fn get_bridge_l2_tx_gas_data<Tr, P>(
+        &self,
+        bridge_hub_contract: &Bridgehub::BridgehubInstance<Tr, P, Ethereum>,
+        l1_to_l2_tx: TransactionRequest,
+        l2_chain_id: U256,
+        max_fee_per_gas: U256,
+        gas_per_pubdata_limit: U256,
+    ) -> Result<BridgeL2TxGasData, L1CommunicationError>
+    where
+        Tr: Transport + Clone,
+        P: alloy::providers::Provider<Tr, Ethereum>,
+    {
+        let gas_limit = self.estimate_gas_l1_to_l2(l1_to_l2_tx).await.map_err(|_| {
+            L1CommunicationError::Custom(
+                "Error occurred while estimating gas for L1 -> L2 transaction.",
+            )
+        })?;
+
+        let tx_base_cost = bridge_hub_contract
+            .l2TransactionBaseCost(
+                l2_chain_id,
+                U256::from(max_fee_per_gas),
+                gas_limit,
+                gas_per_pubdata_limit,
+            )
+            .call()
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom(
+                    "Error occurred while estimating L2 transaction base cost.",
+                )
+            })?
+            ._0;
+        Ok(BridgeL2TxGasData {
+            gas_limit,
+            tx_base_cost,
+        })
+    }
+
     /// Deposits specified L1 token to the L2 address.
     ///
     /// ## Parameters
     ///
-    /// - `deposit_request.token`: L1 token address to deposit.
-    /// - `receiver`: receiver L2 address.
-    /// - `amount`: amount to deposit in Wei.
+    /// - `deposit_request`: deposit request which contains deposit params including amount, token to deposit etc.
     /// - `l1_provider`: reference to the L1 provider.
     ///
     /// ## Returns
@@ -500,19 +592,19 @@ where
                 )
             })?
             .unwrap();
-        let bridge_hub_contract = Bridgehub::new(bridge_hub_contract_address, &l1_provider);
+        let bridge_hub_contract = Bridgehub::new(bridge_hub_contract_address, l1_provider);
 
         if deposit_request.token != ETHER_L1_ADDRESS {
             let (l1_bridge_address, l2_bridge_address) = self
-                .get_bridge_addresses_for_deposit(deposit_request, l2_chain_id, &l1_provider)
+                .get_bridge_addresses_for_deposit(deposit_request, l2_chain_id, l1_provider)
                 .await?;
 
-            let erc20_contract = ERC20::new(deposit_request.token, &l1_provider);
+            let erc20_contract = ERC20::new(deposit_request.token, l1_provider);
 
             let token_data = encode_token_data_for_bridge(&erc20_contract)
                 .await
                 .map_err(|_| {
-                    L1CommunicationError::Custom("Error while getting ERC20 token info.")
+                    L1CommunicationError::Custom("Error while encoding ERC20 token data.")
                 })?;
 
             let l2_finalize_deposit_calldata = encode_finalize_deposit_calldata(
@@ -523,36 +615,19 @@ where
                 token_data,
             );
 
-            let estimate_l1_to_l2_tx = TransactionRequest::default()
-                .with_from(apply_l1_to_l2_alias(l1_bridge_address))
-                .with_to(l2_bridge_address)
-                .with_gas_per_pubdata(deposit_request.gas_per_pubdata_limit)
-                .with_input(l2_finalize_deposit_calldata);
-
-            let estimate_gas_l1_to_l2 = self
-                .estimate_gas_l1_to_l2(estimate_l1_to_l2_tx)
-                .await
-                .map_err(|_| {
-                    L1CommunicationError::Custom(
-                        "Error occurred while estimating gas for L1 -> L2 transaction.",
-                    )
-                })?;
-
-            let l2_base_cost = bridge_hub_contract
-                .l2TransactionBaseCost(
+            let l2_tx_fee = self
+                .get_bridge_l2_tx_gas_data(
+                    &bridge_hub_contract,
+                    TransactionRequest::default()
+                        .with_from(apply_l1_to_l2_alias(l1_bridge_address))
+                        .with_to(l2_bridge_address)
+                        .with_gas_per_pubdata(deposit_request.gas_per_pubdata_limit)
+                        .with_input(l2_finalize_deposit_calldata),
                     l2_chain_id,
                     U256::from(max_fee_per_gas),
-                    estimate_gas_l1_to_l2,
                     deposit_request.gas_per_pubdata_limit,
                 )
-                .call()
-                .await
-                .map_err(|_| {
-                    L1CommunicationError::Custom(
-                        "Error occurred while estimating L2 transaction base cost.",
-                    )
-                })?
-                ._0;
+                .await?;
 
             let bridge_calldata = encode_deposit_token_calldata(
                 deposit_request.token,
@@ -562,9 +637,9 @@ where
             let l2_tx_request_builder = bridge_hub_contract
                 .requestL2TransactionTwoBridges(L2TransactionRequestTwoBridges {
                     chainId: l2_chain_id,
-                    mintValue: l2_base_cost,
+                    mintValue: l2_tx_fee.tx_base_cost,
                     l2Value: U256::from(0),
-                    l2GasLimit: estimate_gas_l1_to_l2,
+                    l2GasLimit: l2_tx_fee.gas_limit,
                     l2GasPerPubdataByteLimit: deposit_request.gas_per_pubdata_limit,
                     refundRecipient: sender,
                     secondBridgeAddress: l1_bridge_address,
@@ -572,7 +647,7 @@ where
                     secondBridgeCalldata: bridge_calldata,
                 })
                 .from(sender)
-                .value(l2_base_cost);
+                .value(l2_tx_fee.tx_base_cost);
 
             let token_allowance = erc20_contract
                 .allowance(sender, l1_bridge_address)
@@ -591,20 +666,12 @@ where
                     .approve(l1_bridge_address, allowance_deficit)
                     .from(sender);
 
-                let approve_tx_request = approve_tx_builder.clone().into_transaction_request();
-                let approve_tx_gas_estimation = l1_provider
-                    .estimate_gas(&approve_tx_request)
-                    .await
-                    .map_err(|_| {
-                        L1CommunicationError::Custom(
-                            "Error occurred while estimating gas limit for the token approve transaction.",
-                        )
-                    })?;
-                let approve_tx_gas_limit = scale_l1_gas_limit(approve_tx_gas_estimation);
+                let approve_tx_gas_limit =
+                    get_gas_limit_for_l1_tx(&approve_tx_builder, l1_provider).await?;
 
                 approve_tx_builder
-                .max_fee_per_gas(max_fee_per_gas)
-                .max_priority_fee_per_gas(max_priority_fee_per_gas)
+                    .max_fee_per_gas(max_fee_per_gas)
+                    .max_priority_fee_per_gas(max_priority_fee_per_gas)
                     .gas(approve_tx_gas_limit)
                     .send()
                     .await
@@ -621,19 +688,7 @@ where
                     )
                     })?;
             }
-
-            let l2_tx_request = l2_tx_request_builder.clone().into_transaction_request();
-            let l1_tx_gas_estimation =
-                l1_provider
-                    .estimate_gas(&l2_tx_request)
-                    .await
-                    .map_err(|_| {
-                        L1CommunicationError::Custom(
-                            "Error occurred while estimating gas limit for the L1 transaction.",
-                        )
-                    })?;
-            let l1_gas_limit = scale_l1_gas_limit(l1_tx_gas_estimation);
-
+            let l1_gas_limit = get_gas_limit_for_l1_tx(&l2_tx_request_builder, l1_provider).await?;
             let l1_tx_receipt = l2_tx_request_builder
                 .max_fee_per_gas(max_fee_per_gas)
                 .max_priority_fee_per_gas(max_priority_fee_per_gas)
@@ -659,40 +714,22 @@ where
             ));
         }
 
-        let estimate_l1_to_l2_tx = TransactionRequest::default()
-            .with_from(sender)
-            .with_to(receiver)
-            .with_value(deposit_request.amount)
-            .with_gas_per_pubdata(deposit_request.gas_per_pubdata_limit)
-            .with_input(Bytes::from("0x"));
-
-        let estimate_gas_l1_to_l2 = self
-            .estimate_gas_l1_to_l2(estimate_l1_to_l2_tx)
-            .await
-            .map_err(|_| {
-                L1CommunicationError::Custom(
-                    "Error occurred while estimating gas for L1 -> L2 transaction.",
-                )
-            })?;
-
-        let l2_base_cost = bridge_hub_contract
-            .l2TransactionBaseCost(
+        let l2_tx_fee = self
+            .get_bridge_l2_tx_gas_data(
+                &bridge_hub_contract,
+                TransactionRequest::default()
+                    .with_from(sender)
+                    .with_to(receiver)
+                    .with_value(deposit_request.amount)
+                    .with_gas_per_pubdata(deposit_request.gas_per_pubdata_limit)
+                    .with_input(Bytes::from("0x")),
                 l2_chain_id,
                 U256::from(max_fee_per_gas),
-                estimate_gas_l1_to_l2,
                 deposit_request.gas_per_pubdata_limit,
             )
-            .call()
-            .await
-            .map_err(|_| {
-                L1CommunicationError::Custom(
-                    "Error occurred while estimating L2 transaction base cost.",
-                )
-            })?
-            ._0;
+            .await?;
 
-        let l1_value = l2_base_cost + deposit_request.amount;
-
+        let l1_value = l2_tx_fee.tx_base_cost + deposit_request.amount;
         let l2_tx_request_builder = bridge_hub_contract
             .requestL2TransactionDirect(L2TransactionRequestDirect {
                 chainId: l2_chain_id,
@@ -700,23 +737,13 @@ where
                 l2Contract: receiver,
                 l2Value: deposit_request.amount,
                 l2Calldata: Bytes::from_str("0x").unwrap(),
-                l2GasLimit: estimate_gas_l1_to_l2,
+                l2GasLimit: l2_tx_fee.gas_limit,
                 l2GasPerPubdataByteLimit: deposit_request.gas_per_pubdata_limit,
                 factoryDeps: vec![],
                 refundRecipient: sender,
             })
             .value(l1_value);
-        let l2_tx_request = l2_tx_request_builder.clone().into_transaction_request();
-        let l1_tx_gas_estimation =
-            l1_provider
-                .estimate_gas(&l2_tx_request)
-                .await
-                .map_err(|_| {
-                    L1CommunicationError::Custom(
-                        "Error occurred while estimating gas limit for the L1 transaction.",
-                    )
-                })?;
-        let l1_gas_limit = scale_l1_gas_limit(l1_tx_gas_estimation);
+        let l1_gas_limit = get_gas_limit_for_l1_tx(&l2_tx_request_builder, l1_provider).await?;
         let l1_tx_receipt = l2_tx_request_builder
             .max_fee_per_gas(max_fee_per_gas)
             .max_priority_fee_per_gas(max_priority_fee_per_gas)

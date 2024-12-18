@@ -47,8 +47,9 @@ async fn main() -> Result<()> {
         .deposit(
             &DepositRequest::new(deposit_amount)
                 .with_receiver(receiver)
-                .with_token(address!("f10A110E59a22b444c669C83b02f0E6d945b2b69"))
-                .with_bridge_address(address!("785185bbac3a09d447c679cf3420b206ea90be88")),
+                .with_token(address!("f10A110E59a22b444c669C83b02f0E6d945b2b69")),
+            // use with_bridge_address to specify custom bridge address for the deposit
+            //.with_bridge_address(address!("785185bbac3a09d447c679cf3420b206ea90be88")),
             &l1_provider,
         )
         .await

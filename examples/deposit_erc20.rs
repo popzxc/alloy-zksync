@@ -50,6 +50,8 @@ async fn main() -> Result<()> {
                 .with_token(address!("f10A110E59a22b444c669C83b02f0E6d945b2b69")),
             // use with_bridge_address to specify custom bridge address for the deposit
             //.with_bridge_address(address!("785185bbac3a09d447c679cf3420b206ea90be88")),
+            // disable tokens auto approval if you plan to manage tokens allowance manually
+            //.with_auto_approval(false),
             &l1_provider,
         )
         .await

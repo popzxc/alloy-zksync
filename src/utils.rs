@@ -4,6 +4,11 @@ use alloy::{
 };
 use std::str::FromStr;
 
+pub const ETHER_L1_ADDRESS: Address = Address::new([
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+]);
+
 ///  Utility function that converts an L1 address to the L2 address.
 pub fn apply_l1_to_l2_alias(l1_address: Address) -> Address {
     let address_modulo: U256 = U256::from(2).pow(U256::from(160));

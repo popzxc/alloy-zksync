@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["contract_deployer","l2_bridge"]};

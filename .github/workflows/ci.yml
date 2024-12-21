@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: ["*"]
   push:
-    branches: ["main"]
+    branches: ["main", "add-ci-checks-for-deposits"]
 
 env:
   CARGO_TERM_COLOR: "always"
@@ -66,10 +66,21 @@ jobs:
       - name: Run doc tests
         run: cargo test --all-features --doc
 
+      - uses: actions/checkout@v4
+        with:
+          repository: matter-labs/local-setup
+          path: dockerized-node
+      - name: Set up Docker Build
+        uses: docker/setup-buildx-action@v3.8.0
+      - name: Start docker containers
+        run: |
+          docker compose -f "./dockerized-node/docker-compose.yml" up -d --build
+
       - name: Run examples
         run: |
           cargo run --example showcase
           cargo run --example deploy
+          cargo run --example deposit_eth
 
   document:
     needs:

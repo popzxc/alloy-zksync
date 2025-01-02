@@ -1,3 +1,5 @@
+//! Layer for `anvil-zksync` wrapper.
+
 use alloy::{
     providers::{Provider, ProviderLayer, RootProvider},
     transports::Transport,

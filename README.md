@@ -9,9 +9,6 @@ ecosystem.
 > This crate can already be used for L2 communication, and is already integrated to some projects,
 > including [foundry-zksync](https://github.com/matter-labs/foundry-zksync).
 >
-> However, the documentation is sparse and test coverage is not great.
-> Use in production at your own risk.
->
 > Bug reports and PRs are appreciated.
 
 ## Overview

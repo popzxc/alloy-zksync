@@ -1,3 +1,5 @@
+//! ZKsync-specific utilities related to ERC20 contracts.
+
 use alloy::{
     contract::Error,
     dyn_abi::DynSolValue,
@@ -8,6 +10,7 @@ use alloy::{
 use ERC20::ERC20Instance;
 
 alloy::sol! {
+    /// ABI for an ERC20 contract.
     #[sol(rpc)]
     contract ERC20 {
         function allowance(address owner, address spender) external view returns (uint256);
@@ -19,6 +22,19 @@ alloy::sol! {
     }
 }
 
+/// Encodes the token data for bridging an ERC20 token.
+///
+/// This function retrieves the name, symbol, and decimals of the ERC20 token
+/// and encodes them into a `Bytes` object for use in bridging operations.
+///
+/// # Arguments
+///
+/// * `erc20_contract` - An instance of the ERC20 contract.
+///
+/// # Returns
+///
+/// A `Result` containing the encoded token data as `Bytes` or an `Error`.
+/// ```
 pub(crate) async fn encode_token_data_for_bridge<T, P, N>(
     erc20_contract: &ERC20Instance<T, P, N>,
 ) -> Result<Bytes, Error>

@@ -22,6 +22,8 @@ pub enum TxType {
 }
 
 impl TxType {
+    /// Tries to represent transaction as an Ethereum transaction type.
+    /// Will return `None` for ZKsync-specific transactions.
     pub fn as_eth_type(self) -> Option<alloy::consensus::TxType> {
         Some(match self {
             TxType::Legacy => alloy::consensus::TxType::Legacy,

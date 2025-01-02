@@ -5,13 +5,17 @@ use serde::{Deserialize, Serialize};
 
 use super::unsigned_tx::eip712::TxEip712;
 
+/// Transaction envelope is a wrapper around the transaction data.
+/// See [`alloy::consensus::TxEnvelope`](https://docs.rs/alloy/latest/alloy/consensus/enum.TxEnvelope.html) for more details.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(
     into = "serde_from::TaggedTxEnvelope",
     from = "serde_from::MaybeTaggedTxEnvelope"
 )]
 pub enum TxEnvelope {
+    /// Ethereum-native transaction.
     Native(alloy::consensus::TxEnvelope),
+    /// ZKsync-native EIP712 transaction.
     Eip712(Signed<TxEip712>),
 }
 

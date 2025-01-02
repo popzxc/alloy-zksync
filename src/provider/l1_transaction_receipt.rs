@@ -19,6 +19,7 @@ impl<T> L1TransactionReceipt<T>
 where
     T: Transport + Clone,
 {
+    /// Creates a new `L1TransactionReceipt` object.
     pub fn new(tx_receipt: TransactionReceipt, l2_provider: RootProvider<T, Zksync>) -> Self {
         Self {
             inner: tx_receipt,
@@ -26,10 +27,16 @@ where
         }
     }
 
+    /// Returns a receipt for the L1 operation.
     pub fn get_receipt(&self) -> &TransactionReceipt {
         &self.inner
     }
 
+    /// Returns a [`PendingTransactionBuilder`](https://docs.rs/alloy/latest/alloy/providers/struct.PendingTransactionBuilder.html)
+    /// for the L2 transaction, which can be used to await the transaction on L2.
+    ///
+    /// Will return an error if the transaction request used to create the object does not contain
+    /// priority operation information (e.g. it doesn't correspond to an L1->L2 transaction).
     pub fn get_l2_tx(&self) -> Result<PendingTransactionBuilder<T, Zksync>, L1CommunicationError> {
         let l1_to_l2_tx_log = self
             .inner

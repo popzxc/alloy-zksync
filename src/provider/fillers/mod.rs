@@ -1,3 +1,5 @@
+//! ZKsync-specific transaction data filler.
+
 use alloy::{
     network::TransactionBuilder,
     primitives::U256,
@@ -12,6 +14,9 @@ use crate::network::{transaction_request::TransactionRequest, Zksync};
 
 use super::{Eip712Fee, ZksyncProvider};
 
+/// [Filler](https://docs.rs/alloy/latest/alloy/providers/fillers/trait.TxFiller.html) for EIP-712 transaction type.
+///
+/// Can fill fields such as `gas_limit`, `max_fee_per_gas`, `max_priority_fee_per_gas`, and `gas_per_pubdata`.
 #[derive(Debug, Clone, Copy, Default)]
 #[non_exhaustive]
 pub struct Eip712FeeFiller {}

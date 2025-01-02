@@ -1,3 +1,5 @@
+//! EIP-712 transaction type, specific to the ZKsync network.
+
 use alloy::consensus::{SignableTransaction, Signed, Transaction, Typed2718};
 use alloy::primitives::PrimitiveSignature as Signature;
 use alloy::primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
@@ -66,7 +68,7 @@ pub struct TxEip712 {
     /// In case of the contract deployment, the address should be set to the deployer system contract,
     /// and the payload should contain ABI-encoded salt, contract bytecode hash, and constructor arguments.
     pub to: Address,
-    // TODO: document
+    /// Address of the sender of the message.
     pub from: Address,
     /// A scalar value equal to the number of Wei to
     /// be transferred to the message call’s recipient or,

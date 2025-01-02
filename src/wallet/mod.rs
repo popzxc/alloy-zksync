@@ -1,3 +1,5 @@
+//! ZKsync wallet.
+
 use alloy::consensus::SignableTransaction;
 use alloy::network::{Network, NetworkWallet, TxSigner};
 use alloy::primitives::Address;

@@ -2,9 +2,12 @@ use eip712::TxEip712;
 
 pub mod eip712;
 
+/// ZKsync transaction type.
 #[derive(Debug)]
 pub enum TypedTransaction {
+    /// Ethereum-native transaction type, e.g. legacy or EIP-1559.
     Native(alloy::consensus::TypedTransaction),
+    /// ZKsync-specific EIP-712 transaction type.
     Eip712(TxEip712),
 }
 

@@ -28,18 +28,32 @@ fn serialize_bytes_custom<S: serde::Serializer>(
 // creating or deserializing meta that has invalid factory deps.
 // TODO: Serde here is used for `TransactionRequest` needs, this has to be reworked once
 // `TransactionRequest` uses custom `Eip712Meta` structure.
+
+/// Represents the EIP-712 metadata for ZKsync transactions.
 #[derive(Default, Serialize, Deserialize, Clone, PartialEq, Debug, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct Eip712Meta {
+    /// Gas per pubdata for the transaction.
     pub gas_per_pubdata: U256,
+    /// Factory dependencies for the transaction.
+    /// Used during the contract deployment, should contain the bytecode of the contract itself,
+    /// as well as bytecodes for any contracts that can be deployed by the contract (e.g. via
+    /// CREATE).
     #[serde(default)]
     #[serde(serialize_with = "serialize_bytes")]
     pub factory_deps: Vec<Bytes>,
+    /// Custom signature for the transaction.
+    ///
+    /// Should only be set in case of using a custom account implementation.
     pub custom_signature: Option<Bytes>,
+    /// Paymaster parameters for the transaction.
     pub paymaster_params: Option<PaymasterParams>,
 }
 
 impl Eip712Meta {
+    /// Computes the hashes of the factory dependencies.
+    ///
+    /// Returns an error if any of the dependencies cannot be hashed.
     pub fn factory_deps_hashes(&self) -> Result<Vec<FixedBytes<32>>, BytecodeHashError> {
         let mut hashes = Vec::with_capacity(self.factory_deps.len() * 32);
         for dep in &self.factory_deps {
@@ -91,6 +105,7 @@ impl Encodable for Eip712Meta {
     // TODO: Implement `length` method
 }
 
+/// Represents the paymaster parameters for ZKsync Era transactions.
 #[derive(Default, Serialize, Deserialize, Clone, PartialEq, Debug, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct PaymasterParams {

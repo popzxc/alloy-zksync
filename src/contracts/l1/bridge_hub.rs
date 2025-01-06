@@ -1,4 +1,5 @@
 alloy::sol! {
+    /// Represents a direct L2 transaction request.
     #[allow(missing_docs)]
     struct L2TransactionRequestDirect {
         uint256 chainId;
@@ -12,6 +13,7 @@ alloy::sol! {
         address refundRecipient;
     }
 
+    /// Represents an L2 transaction request involving two bridges.
     #[allow(missing_docs)]
     struct L2TransactionRequestTwoBridges {
         uint256 chainId;
@@ -25,6 +27,7 @@ alloy::sol! {
         bytes secondBridgeCalldata;
     }
 
+    /// Represents a canonical L2 transaction.
     #[allow(missing_docs)]
     struct L2CanonicalTransaction {
         uint256 txType;
@@ -45,17 +48,48 @@ alloy::sol! {
         bytes reservedDynamic;
     }
 
+    /// Bridgehub contract for handling L2 transaction requests and related operations.
     #[allow(missing_docs)]
     #[sol(rpc)]
     contract Bridgehub {
+        /// Requests a direct L2 transaction.
+        ///
+        /// # Arguments
+        ///
+        /// * `request` - The L2 transaction request.
+        ///
+        /// # Returns
+        ///
+        /// The canonical transaction hash.
         function requestL2TransactionDirect(
             L2TransactionRequestDirect memory request
         ) external payable returns (bytes32 canonicalTxHash);
 
+        /// Requests an L2 transaction involving two bridges.
+        ///
+        /// # Arguments
+        ///
+        /// * `_request` - The L2 transaction request.
+        ///
+        /// # Returns
+        ///
+        /// The canonical transaction hash.
         function requestL2TransactionTwoBridges(
             L2TransactionRequestTwoBridges calldata _request
         ) external payable returns (bytes32 canonicalTxHash);
 
+        /// Calculates the base cost of an L2 transaction.
+        ///
+        /// # Arguments
+        ///
+        /// * `_chainId` - The chain ID.
+        /// * `_gasPrice` - The gas price.
+        /// * `_l2GasLimit` - The L2 gas limit.
+        /// * `_l2GasPerPubdataByteLimit` - The L2 gas per pubdata byte limit.
+        ///
+        /// # Returns
+        ///
+        /// The base cost of the L2 transaction.
         function l2TransactionBaseCost(
             uint256 _chainId,
             uint256 _gasPrice,
@@ -63,6 +97,15 @@ alloy::sol! {
             uint256 _l2GasPerPubdataByteLimit
         ) external view returns (uint256);
 
+        /// Emitted when a new priority request is made.
+        ///
+        /// # Arguments
+        ///
+        /// * `txId` - The transaction ID.
+        /// * `txHash` - The transaction hash.
+        /// * `expirationTimestamp` - The expiration timestamp.
+        /// * `transaction` - The canonical transaction.
+        /// * `factoryDeps` - The factory dependencies.
         event NewPriorityRequest(
             uint256 txId,
             bytes32 txHash,

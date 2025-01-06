@@ -1,3 +1,5 @@
+//! ZKsync-specific type definitions.
+
 use crate::network::unsigned_tx::eip712::PaymasterParams;
 use alloy::primitives::{Address, Bytes, B256, U256, U64};
 use chrono::{DateTime, Utc};
@@ -39,6 +41,7 @@ pub struct BridgeAddresses {
     pub l2_legacy_shared_bridge: Option<Address>,
 }
 
+/// Hashes of base system contracts.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BaseSystemContractsHashes {
     /// Hash of the bootloader system contract.
@@ -49,10 +52,13 @@ pub struct BaseSystemContractsHashes {
     pub evm_emulator: Option<B256>,
 }
 
+/// Current status of the batch.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum BlockStatus {
+    /// The block has been fully executed on L2.
     Sealed,
+    /// The block has been verified on L1.
     Verified,
 }
 
@@ -100,12 +106,17 @@ pub struct BlockDetails {
     pub base_system_contracts_hashes: BaseSystemContractsHashes,
 }
 
+/// Current status of the transaction.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum TransactionStatus {
+    /// The transaction is not executed yet.
     Pending,
+    /// The transaction is included in the block.
     Included,
+    /// The transaction is verified on L1.
     Verified,
+    /// The transaction execution failed.
     Failed,
 }
 
@@ -171,6 +182,7 @@ pub struct L1BatchDetails {
     pub base_system_contracts_hashes: BaseSystemContractsHashes,
 }
 
+/// Static fee model parameters for the V2 fee model.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FeeModelConfigV2 {
     /// Minimal gas price on L2.
@@ -187,14 +199,19 @@ pub struct FeeModelConfigV2 {
     pub max_pubdata_per_batch: U256,
 }
 
+/// Conversion ratio between BaseToken and ETH.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BaseTokenConversionRatio {
+    /// Numerator of the conversion ratio.
     pub numerator: u64,
+    /// Denominator of the conversion ratio.
     pub denominator: u64,
 }
 
+/// Dynamic fee model parameters for the V2 fee model.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FeeParamsV2 {
+    /// Static fee model parameters.
     pub config: FeeModelConfigV2,
     /// L1 gas price.
     pub l1_gas_price: U256,
@@ -204,6 +221,7 @@ pub struct FeeParamsV2 {
     pub conversion_ratio: BaseTokenConversionRatio,
 }
 
+/// Static fee model parameters for the V1 fee model (no longer in active use).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct FeeModelConfigV1 {
     /// The minimal acceptable L2 gas price, i.e. the price that should include the cost of computation/proving as well
@@ -212,9 +230,12 @@ pub struct FeeModelConfigV1 {
     pub minimal_l2_gas_price: u64,
 }
 
+/// Dynamic fee model parameters for the V1 fee model (no longer in active use).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct FeeParamsV1 {
+    /// Static parameters.
     pub config: FeeModelConfigV1,
+    /// L1 gas price.
     pub l1_gas_price: u64,
 }
 
@@ -222,18 +243,23 @@ pub struct FeeParamsV1 {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[allow(clippy::large_enum_variant)]
 pub enum FeeParams {
+    /// V1 fee model parameters (no longer in active use).
     V1(FeeParamsV1),
+    /// V2 fee model parameters.
     V2(FeeParamsV2),
 }
 
+/// Configuration of the L1 verifier contract.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct L1VerifierConfig {
+    /// Verification key hash for the topmost recursion level.
     pub recursion_scheduler_level_vk_hash: B256,
 }
 
 /// Response type for `zks_getProtocolVersion`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProtocolVersion {
+    /// Minor version of the protocol (corresponds to the used VKs).
     #[serde(rename = "minorVersion")]
     pub minor_version: Option<u16>,
     /// Unix timestamp of the version's activation.
@@ -256,6 +282,7 @@ pub struct ProtocolVersion {
     pub l2_system_upgrade_tx_hash: Option<B256>,
 }
 
+/// Merkle proof for a storage value.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StorageProof {
     /// Storage key for which the proof is provided.
@@ -281,6 +308,7 @@ pub struct Proof {
     pub storage_proof: Vec<StorageProof>,
 }
 
+/// Log of a storage access.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageLog {

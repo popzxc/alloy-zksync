@@ -4,6 +4,7 @@ use k256::sha2::{self, Digest};
 const WORD_SIZE: usize = 32;
 const MAX_BYTECODE_LENGTH: usize = WORD_SIZE * u16::MAX as usize;
 
+/// Errors that can occur during bytecode hashing.
 #[derive(Debug, thiserror::Error)]
 pub enum BytecodeHashError {
     #[error("Bytecode cannot be split into 32-byte words")]

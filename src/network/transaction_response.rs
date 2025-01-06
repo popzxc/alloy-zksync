@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/// ZKsync transaction response.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(
     into = "serde_from::TransactionEither",

@@ -1,3 +1,5 @@
+//! ZKsync provider.
+
 pub use self::{
     deposit::{DepositExecutor, DepositRequest},
     l1_communication_error::L1CommunicationError,
@@ -30,6 +32,14 @@ mod provider_builder_ext;
 
 type GetMsgProofRequest = (u64, Address, B256, Option<usize>);
 
+/// ZKsync provider is an extension trait for the [`Provider`](https://docs.rs/alloy/latest/alloy/providers/trait.Provider.html)
+/// trait that adds ZKsync-specific methods.
+///
+/// This trait has a blanket implementation for any type that implements
+/// `Provider` trait. It means that it can be built using normal [`ProviderBuilder`](https://docs.rs/alloy/latest/alloy/providers/struct.ProviderBuilder.html)
+/// by specifying the network generic parameter.
+///
+/// For convenience, you can use [`zksync_provider`] function instead.
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
 pub trait ZksyncProvider<T = BoxTransport>: Provider<T, Zksync>

@@ -6,10 +6,14 @@ use alloy::primitives::Log;
 use alloy_consensus_any::AnyReceiptEnvelope;
 use serde::{Deserialize, Serialize};
 
+/// Receipt envelope is a wrapper around the receipt data.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ReceiptEnvelope<T = Log> {
+    /// Receipt for an Ethereum-native transaction.
     Native(alloy::consensus::ReceiptEnvelope<T>),
+    /// Receipt for ZKsync-native EIP712 transaction.
+    ///
     /// For now AnyReceiptEnvelope is used due to the fact that
     /// alloy::consensus::ReceiptEnvelope cannot be decoded because of different transaction type,
     /// but for now we don't need any custom functionality for EIP712 receipt

@@ -17,6 +17,7 @@ type AnvilZKsyncProviderResult<T> = Result<T, AnvilZKsyncError>;
 type JoinedZksyncWalletFiller<F> = JoinFill<F, WalletFiller<ZksyncWallet>>;
 type ZksyncHttpTransport = alloy::transports::http::Http<reqwest::Client>;
 
+/// ZKsync-specific extensions for the [`ProviderBuilder`](https://docs.rs/alloy/latest/alloy/providers/struct.ProviderBuilder.html).
 pub trait ProviderBuilderExt<L, F>: Sized
 where
     F: TxFiller<Zksync> + ProviderLayer<L::Provider, ZksyncHttpTransport, Zksync>,
@@ -26,8 +27,10 @@ where
         Zksync,
     >,
 {
+    /// Build a provider that would spawn `anvil-zksync` instance in background and will use it.
     fn on_anvil_zksync(self) -> F::Provider;
 
+    /// Same as [`on_anvil_zksync`](Self::on_anvil_zksync), but also configures a wallet backed by anvil-zksync keys.
     fn on_anvil_zksync_with_wallet(
         self,
     ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
@@ -36,9 +39,11 @@ where
         Zksync,
     >>::Provider;
 
+    /// Same as [`on_anvil_zksync`](Self::on_anvil_zksync), allows to configure `anvil-zksync`.
     fn on_anvil_zksync_with_config(self, f: impl FnOnce(AnvilZKsync) -> AnvilZKsync)
         -> F::Provider;
 
+    /// Same as [`on_anvil_zksync_with_wallet`](Self::on_anvil_zksync_with_wallet), allows to configure `anvil-zksync`.
     fn on_anvil_zksync_with_wallet_and_config(
         self,
         f: impl FnOnce(AnvilZKsync) -> AnvilZKsync,
@@ -48,6 +53,7 @@ where
         Zksync,
     >>::Provider;
 
+    /// Fallible version of [`on_anvil_zksync_with_wallet_and_config`](Self::on_anvil_zksync_with_wallet_and_config).
     fn try_on_anvil_zksync_with_wallet_and_config(
         self,
         f: impl FnOnce(AnvilZKsync) -> AnvilZKsync,

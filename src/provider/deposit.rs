@@ -1,3 +1,5 @@
+//! Implementation of the deposit logic.
+
 use crate::{
     contracts::{
         common::erc20::{encode_token_data_for_bridge, ERC20},
@@ -27,7 +29,9 @@ use std::{marker::PhantomData, str::FromStr};
 
 pub const REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT: u64 = 800;
 
-/// Type for deposit request
+/// Type for deposit request.
+/// This type only stores the required information for the deposit, while the deposit itself
+/// is performed via [`DepositExecutor`].
 #[derive(Clone, Debug)]
 pub struct DepositRequest {
     /// Amount to deposit in Wei.
@@ -47,6 +51,7 @@ pub struct DepositRequest {
 }
 
 impl DepositRequest {
+    /// Initiates a new deposit request.
     pub fn new(amount: U256) -> Self {
         Self {
             amount,
@@ -58,30 +63,36 @@ impl DepositRequest {
         }
     }
 
-    pub fn with_amount(&self) -> &U256 {
+    /// Returns the amount to deposit.
+    pub fn amount(&self) -> &U256 {
         &self.amount
     }
 
+    /// Sets the receiver for the deposit.
     pub fn with_receiver(mut self, address: Address) -> Self {
         self.receiver = Some(address);
         self
     }
 
+    /// Sets the token address for the deposit.
     pub fn with_token(mut self, token: Address) -> Self {
         self.token = token;
         self
     }
 
+    /// Sets the gas per pubdata limit for the transaction.
     pub fn with_gas_per_pubdata_limit(mut self, value: U256) -> Self {
         self.gas_per_pubdata_limit = value;
         self
     }
 
+    /// Sets the bridge address.
     pub fn with_bridge_address(mut self, bridge_address: Address) -> Self {
         self.bridge_address = Some(bridge_address);
         self
     }
 
+    /// Enables or disables auto-approval for ERC20 tokens.
     pub fn with_auto_approval(mut self, auto_approval: bool) -> Self {
         self.auto_approval = auto_approval;
         self
@@ -141,6 +152,7 @@ where
     P2: ZksyncProvider<T> + WalletProvider<Zksync> + ?Sized,
     T: Transport + Clone,
 {
+    /// Prepares an executor for a particular deposit request.
     pub fn new(l1_provider: &'a P1, l2_provider: &'a P2, request: &'a DepositRequest) -> Self {
         DepositExecutor {
             l1_provider,
@@ -467,7 +479,14 @@ where
         ))
     }
 
-    /// Executes specified deposit request
+    /// Executes specified deposit request. This will handle:
+    /// - Approving tokens if necessary.
+    /// - Sending the deposit transaction.
+    /// - Returning the [`L1TransactionReceipt`] of the deposit transaction.
+    ///
+    /// Returned receipt can be converted into a pending L2 transaction and awaited
+    /// using [`PendingTransactionBuilder`](https://docs.rs/alloy/latest/alloy/providers/struct.PendingTransactionBuilder.html)
+    /// interface.
     ///
     /// ## Returns
     ///

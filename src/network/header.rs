@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/// See [Header](https://docs.rs/alloy/latest/alloy/rpc/types/struct.Header.html).
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Header {
     #[serde(flatten)]
@@ -11,6 +12,7 @@ impl Header {
         self.inner.hash_slow()
     }
 }
+
 impl alloy::consensus::BlockHeader for Header {
     fn parent_hash(&self) -> alloy::primitives::B256 {
         self.inner.parent_hash()

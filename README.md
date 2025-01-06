@@ -1,13 +1,17 @@
 # alloy-zksync
 
+[Latest release docs](https://docs.rs/alloy-zksync) | [Main branch docs](https://popzxc.github.io/alloy-zksync/alloy_zksync/)
+
 This crate provides implementation of the ZKsync network support for the [alloy](https://github.com/alloy-rs/alloy/)
 ecosystem.
 
 > [!WARNING]  
-> This crate is under heavy development and is not suitable for production use.
-> For now, it's being maintained as a personal pet project and not something maintained by Matter Labs.
+> Work in progress.
 >
-> Functionality is lacking. Tests are lacking. PRs are appreciated.
+> This crate can already be used for L2 communication, and is already integrated to some projects,
+> including [foundry-zksync](https://github.com/matter-labs/foundry-zksync).
+>
+> Bug reports and PRs are appreciated.
 
 ## Overview
 
@@ -37,8 +41,8 @@ For usage, the best reference currently is [examples](./examples/):
 - [x] Zksync network definition
 - [x] Example of sending tx to era test node via era binding
 - [x] Eip712 tx (works partially)
-- [in progress] API extensions (`zks` namespace)
-- [ ] L1->L2 txs (deposits)
+- [x] API extensions (`zks` namespace)
+- [x] L1->L2 txs (deposits)
 - [ ] L2->L1 txs (withdrawals)
 - [x] Fillers
 - [ ] Mirrored crate structure

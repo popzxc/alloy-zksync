@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/// See [HeaderResponse](https://docs.rs/alloy/latest/alloy/network/primitives/trait.HeaderResponse.html).
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct HeaderResponse {
     hash: alloy::primitives::BlockHash,

@@ -510,3 +510,235 @@ impl From<alloy::rpc::types::transaction::TransactionRequest> for TransactionReq
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloy::consensus::Transaction as _;
+    use alloy::primitives::U256;
+    use alloy::rpc::types::transaction::TransactionRequest as AlloyTransactionRequest;
+
+    #[test]
+    fn test_default_transaction_request() {
+        let tx_request = TransactionRequest::default();
+        assert_eq!(tx_request.base.transaction_type, Some(TxType::Eip712 as u8));
+        assert!(tx_request.eip_712_meta.is_none());
+    }
+
+    #[test]
+    fn test_set_gas_per_pubdata() {
+        let mut tx_request = TransactionRequest::default();
+        let gas_per_pubdata = U256::from(1000);
+        tx_request.set_gas_per_pubdata(gas_per_pubdata);
+        assert_eq!(tx_request.gas_per_pubdata(), Some(gas_per_pubdata));
+    }
+
+    #[test]
+    fn test_with_gas_per_pubdata() {
+        let gas_per_pubdata = U256::from(1000);
+        let tx_request = TransactionRequest::default().with_gas_per_pubdata(gas_per_pubdata);
+        assert_eq!(tx_request.gas_per_pubdata(), Some(gas_per_pubdata));
+    }
+
+    #[test]
+    fn test_set_factory_deps() {
+        let mut tx_request = TransactionRequest::default();
+        let factory_deps = vec![Bytes::from(vec![1, 2, 3])];
+        tx_request.set_factory_deps(factory_deps.clone());
+        assert_eq!(tx_request.factory_deps(), Some(&factory_deps));
+    }
+
+    #[test]
+    fn test_with_factory_deps() {
+        let factory_deps = vec![Bytes::from(vec![1, 2, 3])];
+        let tx_request = TransactionRequest::default().with_factory_deps(factory_deps.clone());
+        assert_eq!(tx_request.factory_deps(), Some(&factory_deps));
+    }
+
+    #[test]
+    fn test_set_custom_signature() {
+        let mut tx_request = TransactionRequest::default();
+        let custom_signature = Bytes::from(vec![1, 2, 3]);
+        tx_request.set_custom_signature(custom_signature.clone());
+        assert_eq!(tx_request.custom_signature(), Some(&custom_signature));
+    }
+
+    #[test]
+    fn test_with_custom_signature() {
+        let custom_signature = Bytes::from(vec![1, 2, 3]);
+        let tx_request =
+            TransactionRequest::default().with_custom_signature(custom_signature.clone());
+        assert_eq!(tx_request.custom_signature(), Some(&custom_signature));
+    }
+
+    #[test]
+    fn test_set_paymaster_params() {
+        let mut tx_request = TransactionRequest::default();
+        let paymaster_params = PaymasterParams::default();
+        tx_request.set_paymaster_params(paymaster_params.clone());
+        assert_eq!(tx_request.paymaster_params(), Some(&paymaster_params));
+    }
+
+    #[test]
+    fn test_with_paymaster_params() {
+        let paymaster_params = PaymasterParams::default();
+        let tx_request =
+            TransactionRequest::default().with_paymaster_params(paymaster_params.clone());
+        assert_eq!(tx_request.paymaster_params(), Some(&paymaster_params));
+    }
+
+    #[test]
+    fn test_from_alloy_transaction_request() {
+        let alloy_tx_request = AlloyTransactionRequest::default();
+        let tx_request: TransactionRequest = alloy_tx_request.clone().into();
+        assert_eq!(tx_request.base, alloy_tx_request);
+    }
+
+    #[test]
+    fn test_prep_for_submission_with_eip712_meta() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.prep_for_submission();
+        assert_eq!(tx_request.base.transaction_type, Some(TxType::Eip712 as u8));
+        assert!(tx_request.base.gas_price.is_none());
+        assert!(tx_request.base.blob_versioned_hashes.is_none());
+        assert!(tx_request.base.sidecar.is_none());
+    }
+
+    #[test]
+    fn test_can_build_with_eip712_meta() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_fee_per_gas = Some(100);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        assert!(tx_request.can_build());
+    }
+
+    #[test]
+    fn test_cannot_build_without_gas() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_fee_per_gas = Some(100);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        assert!(!tx_request.can_build());
+    }
+
+    #[test]
+    fn test_cannot_build_without_nonce() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.gas = Some(21000);
+        tx_request.base.max_fee_per_gas = Some(100);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        assert!(!tx_request.can_build());
+    }
+
+    #[test]
+    fn test_cannot_build_without_max_fee_per_gas() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        assert!(!tx_request.can_build());
+    }
+
+    #[test]
+    fn test_cannot_build_without_max_priority_fee_per_gas() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_fee_per_gas = Some(100);
+        assert!(!tx_request.can_build());
+    }
+
+    #[test]
+    fn test_output_tx_type_checked_with_eip712_meta() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_fee_per_gas = Some(100);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        assert_eq!(tx_request.output_tx_type_checked(), Some(TxType::Eip712));
+    }
+
+    #[test]
+    fn test_output_tx_type_checked_without_eip712_meta() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_fee_per_gas = Some(100);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        assert_eq!(tx_request.output_tx_type_checked(), None);
+    }
+
+    #[test]
+    fn test_output_tx_type_checked_cannot_build() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        assert_eq!(tx_request.output_tx_type_checked(), None);
+    }
+
+    #[test]
+    fn test_build_unsigned_with_eip712_meta() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.set_gas_per_pubdata(U256::from(1000));
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_fee_per_gas = Some(100);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        tx_request.base.to = Some(TxKind::Call(CONTRACT_DEPLOYER_ADDRESS));
+        tx_request.base.chain_id = Some(1);
+        tx_request.base.from = Some(CONTRACT_DEPLOYER_ADDRESS);
+        let result = tx_request.build_unsigned();
+        assert!(result.is_ok());
+        if let Ok(crate::network::unsigned_tx::TypedTransaction::Eip712(tx)) = result {
+            assert_eq!(tx.chain_id, 1);
+            assert_eq!(tx.nonce, U256::from(0));
+            assert_eq!(tx.gas, 21000);
+            assert_eq!(tx.max_fee_per_gas, 100);
+            assert_eq!(tx.max_priority_fee_per_gas, 1);
+            assert_eq!(tx.from, CONTRACT_DEPLOYER_ADDRESS);
+        } else {
+            panic!("Expected Eip712 transaction");
+        }
+    }
+
+    #[test]
+    fn test_build_unsigned_without_eip712_meta() {
+        let mut tx_request = TransactionRequest::default();
+        tx_request.base.gas = Some(21000);
+        tx_request.base.nonce = Some(0);
+        tx_request.base.max_fee_per_gas = Some(100);
+        tx_request.base.max_priority_fee_per_gas = Some(1);
+        tx_request.base.to = Some(TxKind::Call(CONTRACT_DEPLOYER_ADDRESS));
+        tx_request.base.chain_id = Some(1);
+        tx_request.base.from = Some(CONTRACT_DEPLOYER_ADDRESS);
+        let result = tx_request.build_unsigned();
+        assert!(result.is_ok());
+        if let Ok(crate::network::unsigned_tx::TypedTransaction::Native(tx)) = result {
+            assert_eq!(tx.chain_id(), Some(1));
+            assert_eq!(tx.nonce(), 0);
+            assert_eq!(tx.gas_limit(), 21000);
+            assert_eq!(tx.max_fee_per_gas(), 100);
+            assert_eq!(tx.max_priority_fee_per_gas(), Some(1));
+            assert_eq!(tx.to(), Some(CONTRACT_DEPLOYER_ADDRESS));
+        } else {
+            panic!("Expected Native transaction");
+        }
+    }
+
+    #[test]
+    fn test_build_unsigned_missing_fields() {
+        let tx_request = TransactionRequest::default();
+        let result = tx_request.build_unsigned();
+        assert!(result.is_err());
+    }
+}

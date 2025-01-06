@@ -66,16 +66,16 @@ jobs:
       - name: Run doc tests
         run: cargo test --all-features --doc
 
-      - uses: actions/checkout@v4
+      - name: Checkout local setup repository
+        uses: actions/checkout@v4
         with:
           repository: matter-labs/local-setup
           path: dockerized-node
-      - name: Set up Docker Build
+      - name: Set up docker build
         uses: docker/setup-buildx-action@v3.8.0
-      - name: Start docker containers
+      - name: Start dockerized node
         run: |
-          docker compose -f "./dockerized-node/docker-compose.yml" up -d --build
-
+          docker compose -f "./dockerized-node/docker-compose.yml" up -d --build --wait --wait-timeout 2000
       - name: Run examples
         run: |
           cargo run --example showcase

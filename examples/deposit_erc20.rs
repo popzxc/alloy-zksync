@@ -1,14 +1,24 @@
 use alloy::{
     network::EthereumWallet,
     primitives::{address, U256},
-    providers::ProviderBuilder,
+    providers::{Provider, ProviderBuilder},
     signers::local::PrivateKeySigner,
+    sol,
 };
 use alloy_zksync::{
     provider::{zksync_provider, DepositRequest, ZksyncProviderWithWallet},
     wallet::ZksyncWallet,
 };
 use anyhow::Result;
+
+sol!(
+    #[allow(missing_docs)]
+    #[sol(rpc)]
+    ERC20Example,
+    // ERC20 example taken from the alloy-rs repo:
+    // https://github.com/alloy-rs/examples/blob/main/examples/transactions/examples/artifacts/ERC20Example.json
+    "examples/artifacts/ERC20Example.json"
+);
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,6 +42,14 @@ async fn main() -> Result<()> {
         .wallet(wallet)
         .on_http(l1_rpc_url);
 
+    let l1_gas_price = l1_provider.get_gas_price().await?;
+    // Deploy a test ERC20 token to be used for the deposit.
+    let erc20_token_address = ERC20Example::deploy_builder(&l1_provider)
+        .gas_price(l1_gas_price)
+        .deploy()
+        .await?;
+    println!("L1 ERC20 token address: {}", erc20_token_address);
+
     let zksync_wallet: ZksyncWallet = ZksyncWallet::from(signer.clone());
     let zksync_provider = zksync_provider()
         .with_recommended_fillers()
@@ -47,7 +65,7 @@ async fn main() -> Result<()> {
         .deposit(
             &DepositRequest::new(deposit_amount)
                 .with_receiver(receiver)
-                .with_token(address!("f10A110E59a22b444c669C83b02f0E6d945b2b69")),
+                .with_token(erc20_token_address),
             // use with_bridge_address to specify custom bridge address for the deposit
             //.with_bridge_address(address!("785185bbac3a09d447c679cf3420b206ea90be88")),
             // disable tokens auto approval if you plan to manage tokens allowance manually

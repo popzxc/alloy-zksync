@@ -81,6 +81,7 @@ jobs:
           cargo run --example showcase
           cargo run --example deploy
           cargo run --example deposit_eth
+          cargo run --example deposit_erc20
 
   document:
     needs:

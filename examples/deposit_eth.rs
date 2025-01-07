@@ -1,5 +1,3 @@
-//! Example of depositing ETH token.
-
 use alloy::{
     network::EthereumWallet,
     primitives::{address, U256},

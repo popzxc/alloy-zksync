@@ -427,10 +427,6 @@ mod serde_from {
                 TxEnvelope::Native(alloy::consensus::TxEnvelope::Eip7702(signed)) => {
                     Self::Eip7702(signed)
                 }
-                TxEnvelope::Native(tx) => panic!(
-                    "Unsupported native Ethereum transaction type: {}",
-                    tx.tx_type()
-                ),
                 TxEnvelope::Eip712(signed) => Self::Eip712(signed),
             }
         }

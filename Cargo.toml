@@ -21,12 +21,12 @@ k256 = "0.13.3"
 rand = "0.8.5"
 reqwest = "0.12.8"
 serde = "1.0.203"
-thiserror = "2.0.9"
+thiserror = "2.0.10"
 tracing = "0.1.40"
 url = "2.5.2"
 
 [dev-dependencies]
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.43.0", features = ["full"] }
 anyhow = "1"
 hex = "0.4.3"
 assert_matches = "1.5.0"

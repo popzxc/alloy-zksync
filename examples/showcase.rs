@@ -15,7 +15,8 @@ async fn main() -> anyhow::Result<()> {
     // Create a provider with the wallet.
     let provider = zksync_provider()
         .with_recommended_fillers()
-        .on_anvil_zksync_with_wallet();
+        // set anvil port to 0 to let it choose a random available port
+        .on_anvil_zksync_with_wallet_and_config(|anvil| anvil.port(0_u16));
 
     // Build a transaction to send 100 wei from Alice to Vitalik.
     // The `from` field is automatically filled to the first signer's address (Alice).

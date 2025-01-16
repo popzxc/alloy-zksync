@@ -78,7 +78,7 @@ impl<T: TxReceipt<Log = Log>> alloy::network::ReceiptResponse for ReceiptRespons
     }
 
     /// Gas used by this transaction alone.
-    fn gas_used(&self) -> u128 {
+    fn gas_used(&self) -> u64 {
         self.inner.gas_used()
     }
 
@@ -88,7 +88,7 @@ impl<T: TxReceipt<Log = Log>> alloy::network::ReceiptResponse for ReceiptRespons
     }
 
     /// Blob gas used by the eip-4844 transaction.
-    fn blob_gas_used(&self) -> Option<u128> {
+    fn blob_gas_used(&self) -> Option<u64> {
         self.inner.blob_gas_used()
     }
 
@@ -113,7 +113,7 @@ impl<T: TxReceipt<Log = Log>> alloy::network::ReceiptResponse for ReceiptRespons
     }
 
     /// Returns the cumulative gas used at this receipt.
-    fn cumulative_gas_used(&self) -> u128 {
+    fn cumulative_gas_used(&self) -> u64 {
         self.inner.cumulative_gas_used()
     }
 

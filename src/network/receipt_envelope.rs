@@ -47,7 +47,7 @@ where
         }
     }
 
-    fn cumulative_gas_used(&self) -> u128 {
+    fn cumulative_gas_used(&self) -> u64 {
         match self {
             ReceiptEnvelope::Native(re) => re.cumulative_gas_used(),
             ReceiptEnvelope::Eip712(re) => re.cumulative_gas_used(),

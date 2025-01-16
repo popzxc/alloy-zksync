@@ -94,10 +94,6 @@ impl alloy::consensus::BlockHeader for Header {
         self.inner.requests_hash()
     }
 
-    fn target_blobs_per_block(&self) -> Option<u64> {
-        self.inner.target_blobs_per_block()
-    }
-
     fn extra_data(&self) -> &alloy::primitives::Bytes {
         self.inner.extra_data()
     }

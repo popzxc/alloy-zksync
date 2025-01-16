@@ -1,3 +1,4 @@
+use alloy::eips::eip7840::BlobParams;
 use serde::{Deserialize, Serialize};
 
 /// See [HeaderResponse](https://docs.rs/alloy/latest/alloy/network/primitives/trait.HeaderResponse.html).
@@ -25,8 +26,8 @@ impl alloy::consensus::BlockHeader for HeaderResponse {
         self.inner.base_fee_per_gas()
     }
 
-    fn next_block_blob_fee(&self) -> Option<u128> {
-        self.inner.next_block_blob_fee()
+    fn next_block_blob_fee(&self, blob_params: BlobParams) -> Option<u128> {
+        self.inner.next_block_blob_fee(blob_params)
     }
 
     fn gas_limit(&self) -> u64 {
@@ -95,10 +96,6 @@ impl alloy::consensus::BlockHeader for HeaderResponse {
 
     fn requests_hash(&self) -> Option<alloy::primitives::B256> {
         self.inner.requests_hash()
-    }
-
-    fn target_blobs_per_block(&self) -> Option<u64> {
-        self.inner.target_blobs_per_block()
     }
 }
 

@@ -156,6 +156,7 @@ pub struct AnvilZKsync {
     mnemonic: Option<String>,
     fork: Option<String>,
     fork_block_number: Option<u64>,
+    replay_tx: Option<String>,
     args: Vec<String>,
     timeout: Option<u64>,
 }
@@ -262,6 +263,13 @@ impl AnvilZKsync {
         self
     }
 
+    /// Sets the `replay_tx` argument to replay a transaction from mainnet or another network
+    /// For example: `anvil-zksync replay_tx --fork-url mainnet 0xABC123...`
+    pub fn replay_tx<T: Into<String>>(mut self, tx_hash: T) -> Self {
+        self.replay_tx = Some(tx_hash.into());
+        self
+    }
+
     /// Adds an argument to pass to the `anvil-zksync`.
     pub fn arg<T: Into<String>>(mut self, arg: T) -> Self {
         self.args.push(arg.into());
@@ -304,8 +312,7 @@ impl AnvilZKsync {
             .map_or_else(|| Command::new("anvil-zksync"), Command::new);
         cmd.stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::inherit());
-        // let mut port = self.port.unwrap_or_default();
-        // cmd.arg("-p").arg(port.to_string());
+        
         if let Some(port) = self.port {
             cmd.arg("--port").arg(port.to_string());
         }
@@ -328,14 +335,25 @@ impl AnvilZKsync {
 
         cmd.args(self.args);
 
-        if let Some(fork) = self.fork {
-            cmd.arg("fork").arg("--network").arg(fork);
+        if let Some(ref tx_hash) = self.replay_tx {
+            let fork_url = self
+                .fork
+                .as_ref()
+                .expect("A `fork` URL must be provided to replay a transaction");
+
+            cmd.arg("replay_tx")
+                .arg("--fork-url")
+                .arg(fork_url)
+                .arg(tx_hash);
+        } else if let Some(ref fork_url) = self.fork {
+            cmd.arg("fork").arg("--network").arg(fork_url);
+
             if let Some(fork_block_number) = self.fork_block_number {
-                println!("fork_block_number ln 312: {}", fork_block_number);
                 cmd.arg("--fork-block-number")
                     .arg(fork_block_number.to_string());
             }
         } else {
+            // default to run
             cmd.arg("run");
         }
 
@@ -443,9 +461,9 @@ mod tests {
     fn assert_block_time_is_natural_number() {
         // This test is to ensure that older versions of era_test_node are supported
         // even though the block time is a f64, it should be passed as a whole number
-        let era_test_node = AnvilZKsync::new().block_time(12);
-        assert_eq!(era_test_node.block_time.unwrap().to_string(), "12");
-        let _ = era_test_node.spawn();
+        let anvil_zksync = AnvilZKsync::new().block_time(12);
+        assert_eq!(anvil_zksync.block_time.unwrap().to_string(), "12");
+        let _ = anvil_zksync.spawn();
     }
 
     // #[test]
@@ -555,5 +573,16 @@ mod tests {
         let anvil_zksync = AnvilZKsync::new().no_mine().spawn();
 
         drop(anvil_zksync);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn replay_tx_from_mainnet() {
+        let fork_url = "mainnet";
+        let tx_hash = "0x4f8a6c93fee26a3dd01ee0c92f0adeb78960ba36b20b24de61392983234e60dd";
+        
+        // Set timeout to 20 seconds so node has enough time to re-execute the transactions
+        let instance = AnvilZKsync::new().timeout(20_000).replay_tx(tx_hash).fork(fork_url).spawn();
+        
+        drop(instance);
     }
 }

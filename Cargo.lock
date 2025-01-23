@@ -63,12 +63,13 @@ dependencies = [
 
 [[package]]
 name = "alloy-chains"
-version = "0.1.53"
+version = "0.1.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da226340862e036ab26336dc99ca85311c6b662267c1440e1733890fd688802c"
+checksum = "4ab9d1367c6ffb90c93fb4a9a4989530aa85112438c6f73a734067255d348469"
 dependencies = [
  "alloy-primitives",
  "num_enum",
+ "serde",
  "strum",
 ]
 
@@ -675,6 +676,7 @@ name = "alloy-zksync"
 version = "0.9.0"
 dependencies = [
  "alloy",
+ "alloy-chains",
  "alloy-consensus-any",
  "anyhow",
  "assert_matches",

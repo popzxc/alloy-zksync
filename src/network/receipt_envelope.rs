@@ -2,8 +2,8 @@ use core::fmt;
 
 use alloy::consensus::{TxReceipt, TxType};
 use alloy::network::eip2718::{Decodable2718, Eip2718Error, Encodable2718};
+use alloy::network::AnyReceiptEnvelope;
 use alloy::primitives::Log;
-use alloy_consensus_any::AnyReceiptEnvelope;
 use serde::{Deserialize, Serialize};
 
 /// Receipt envelope is a wrapper around the receipt data.
@@ -91,8 +91,7 @@ impl Decodable2718 for ReceiptEnvelope {
         match tx_type_result {
             Ok(_) => alloy::consensus::ReceiptEnvelope::typed_decode(ty, buf)
                 .map(ReceiptEnvelope::Native),
-            Err(_) => alloy_consensus_any::AnyReceiptEnvelope::typed_decode(ty, buf)
-                .map(ReceiptEnvelope::Eip712),
+            Err(_) => AnyReceiptEnvelope::typed_decode(ty, buf).map(ReceiptEnvelope::Eip712),
         }
     }
 

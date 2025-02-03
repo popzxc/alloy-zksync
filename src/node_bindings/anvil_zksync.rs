@@ -79,6 +79,11 @@ impl AnvilZKsyncInstance {
 
 impl Drop for AnvilZKsyncInstance {
     fn drop(&mut self) {
+        // Kill anvil-zksync and all of its subprocesses by PGID
+        #[cfg(unix)]
+        unsafe {
+            libc::killpg(self.child.id() as i32, 9);
+        }
         self.child.kill().expect("could not kill anvil-zksync");
     }
 }
@@ -302,6 +307,9 @@ impl AnvilZKsync {
             .program
             .as_ref()
             .map_or_else(|| Command::new("anvil-zksync"), Command::new);
+        // Make anvil-zksync use PGID=PID for itself and other child processes it spawns
+        #[cfg(unix)]
+        std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
         cmd.stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::inherit());
         // let mut port = self.port.unwrap_or_default();

@@ -18,6 +18,7 @@ alloy = { version = "0.9.2", default-features = false, features = [
 async-trait = "0.1.80"
 chrono = { version = "0.4.38", features = ["serde"] }
 k256 = "0.13.3"
+libc = "0.2.169"
 rand = "0.8.5"
 reqwest = "0.12.8"
 serde = "1.0.203"

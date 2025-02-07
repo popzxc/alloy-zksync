@@ -24,6 +24,15 @@ fn serialize_bytes_custom<S: serde::Serializer>(
     serializer.serialize_bytes(&bytes.0)
 }
 
+fn serialize_bytes_opt<S: serde::Serializer>(
+    value: &Option<Bytes>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match value {
+        Some(bytes) => serializer.serialize_bytes(&bytes.0),
+        None => serializer.serialize_none(),
+    }
+}
 // TODO: The structure should be correct by construction, e.g. we should not allow
 // creating or deserializing meta that has invalid factory deps.
 // TODO: Serde here is used for `TransactionRequest` needs, this has to be reworked once
@@ -45,6 +54,7 @@ pub struct Eip712Meta {
     /// Custom signature for the transaction.
     ///
     /// Should only be set in case of using a custom account implementation.
+    #[serde(serialize_with = "serialize_bytes_opt")]
     pub custom_signature: Option<Bytes>,
     /// Paymaster parameters for the transaction.
     pub paymaster_params: Option<PaymasterParams>,
@@ -138,5 +148,43 @@ impl Encodable for PaymasterParams {
         h.encode(out);
         self.paymaster.encode(out);
         self.paymaster_input.encode(out);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloy::primitives::address;
+
+    #[test]
+    fn test_can_be_deserialized_into_zksync_internal_type() {
+        let alloy = Eip712Meta {
+            gas_per_pubdata: U256::from(4),
+            factory_deps: vec![vec![1, 2].into()],
+            custom_signature: Some(vec![3, 4].into()),
+            paymaster_params: Some(PaymasterParams {
+                paymaster: address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5"),
+                paymaster_input: vec![5, 6].into(),
+            }),
+        };
+
+        let json = serde_json::to_string(&alloy).unwrap();
+
+        let zksync: zksync_types::transaction_request::Eip712Meta =
+            serde_json::from_str(&json).unwrap();
+
+        assert_eq!(zksync.gas_per_pubdata, zksync_types::U256::from(4));
+        assert_eq!(zksync.factory_deps, vec![vec![1, 2]]);
+        assert_eq!(zksync.custom_signature, Some(vec![3, 4]));
+        assert_eq!(
+            &zksync
+                .paymaster_params
+                .clone()
+                .unwrap()
+                .paymaster
+                .to_fixed_bytes(),
+            address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5").as_slice()
+        );
+        assert_eq!(zksync.paymaster_params.unwrap().paymaster_input, vec![5, 6])
     }
 }

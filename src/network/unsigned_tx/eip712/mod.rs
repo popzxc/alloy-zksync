@@ -583,9 +583,6 @@ mod tests {
         assert_eq!(decoded, tx.into_signed(signature));
     }
 
-    #[test]
-    fn test_can_be_deserialized_as_a_call_request() {}
-
     // #[test]
     // fn recover_signer_eip712() {
     //     let signer: Address = address!("dd6b8b3dc6b7ad97db52f08a275ff4483e024cea");

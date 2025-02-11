@@ -155,10 +155,11 @@ impl Encodable for PaymasterParams {
 mod tests {
     use super::*;
     use alloy::primitives::address;
+    use serde_json::json;
 
     #[test]
-    fn test_can_be_deserialized_into_zksync_internal_type() {
-        let alloy = Eip712Meta {
+    fn test_bytes_get_serialized_into_vec() {
+        let meta = Eip712Meta {
             gas_per_pubdata: U256::from(4),
             factory_deps: vec![vec![1, 2].into()],
             custom_signature: Some(vec![3, 4].into()),
@@ -168,23 +169,17 @@ mod tests {
             }),
         };
 
-        let json = serde_json::to_string(&alloy).unwrap();
+        let expected_json = json!({
+            "gasPerPubdata": "0x4",
+            "factoryDeps": [[1,2]],
+            "customSignature": [3, 4],
+            "paymasterParams": {
+                 "paymaster": "0x99e12239cbf8112fbb3f7fd473d0558031abcbb5",
+                 "paymasterInput": [5, 6],
+            }
+        });
 
-        let zksync: zksync_types::transaction_request::Eip712Meta =
-            serde_json::from_str(&json).unwrap();
-
-        assert_eq!(zksync.gas_per_pubdata, zksync_types::U256::from(4));
-        assert_eq!(zksync.factory_deps, vec![vec![1, 2]]);
-        assert_eq!(zksync.custom_signature, Some(vec![3, 4]));
-        assert_eq!(
-            &zksync
-                .paymaster_params
-                .clone()
-                .unwrap()
-                .paymaster
-                .to_fixed_bytes(),
-            address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5").as_slice()
-        );
-        assert_eq!(zksync.paymaster_params.unwrap().paymaster_input, vec![5, 6])
+        let actual_json = serde_json::to_value(&meta).unwrap();
+        assert_eq!(expected_json, actual_json);
     }
 }

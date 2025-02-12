@@ -40,14 +40,13 @@ impl TxFiller<Zksync> for Eip712FeeFiller {
 
     fn fill_sync(&self, _tx: &mut SendableTx<Zksync>) {}
 
-    async fn prepare<P, T>(
+    async fn prepare<P>(
         &self,
         provider: &P,
         tx: &TransactionRequest,
     ) -> TransportResult<Self::Fillable>
     where
-        P: Provider<T, Zksync>,
-        T: Transport + Clone,
+        P: Provider<Zksync>,
     {
         let fee = provider.estimate_fee(tx.clone()).await?;
         Ok(fee)

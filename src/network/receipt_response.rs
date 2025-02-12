@@ -107,11 +107,6 @@ impl<T: TxReceipt<Log = Log>> alloy::network::ReceiptResponse for ReceiptRespons
         self.inner.to()
     }
 
-    /// EIP-7702 Authorization list.
-    fn authorization_list(&self) -> Option<&[SignedAuthorization]> {
-        self.inner.authorization_list()
-    }
-
     /// Returns the cumulative gas used at this receipt.
     fn cumulative_gas_used(&self) -> u64 {
         self.inner.cumulative_gas_used()

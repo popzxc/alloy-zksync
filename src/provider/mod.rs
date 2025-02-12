@@ -42,29 +42,29 @@ type GetMsgProofRequest = (u64, Address, B256, Option<usize>);
 /// For convenience, you can use [`zksync_provider`] function instead.
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
-pub trait ZksyncProvider<T = BoxTransport>: Provider<T, Zksync>
+pub trait ZksyncProvider<T = BoxTransport>: Provider<Zksync>
 where
     T: Transport + Clone,
 {
     /// Gets the address of the main ZKsync contract on L1.
-    fn get_main_contract(&self) -> ProviderCall<T, NoParams, Address> {
+    fn get_main_contract(&self) -> ProviderCall<NoParams, Address> {
         self.client().request_noparams("zks_getMainContract").into()
     }
 
     /// Gets the address of the testnet paymaster ZKsync contract on L2, if it's present on the network.
-    fn get_testnet_paymaster(&self) -> ProviderCall<T, NoParams, Option<Address>> {
+    fn get_testnet_paymaster(&self) -> ProviderCall<NoParams, Option<Address>> {
         self.client()
             .request_noparams("zks_getTestnetPaymaster")
             .into()
     }
 
     /// Gets the L1 Chain ID.
-    fn get_l1_chain_id(&self) -> ProviderCall<T, NoParams, U64> {
+    fn get_l1_chain_id(&self) -> ProviderCall<NoParams, U64> {
         self.client().request_noparams("zks_L1ChainId").into()
     }
 
     /// Gets the latest L1 batch number.
-    fn get_l1_batch_number(&self) -> ProviderCall<T, NoParams, U64> {
+    fn get_l1_batch_number(&self) -> ProviderCall<NoParams, U64> {
         self.client().request_noparams("zks_L1BatchNumber").into()
     }
 
@@ -72,7 +72,7 @@ where
     fn estimate_fee(
         &self,
         tx: TransactionRequest,
-    ) -> ProviderCall<T, (TransactionRequest,), Eip712Fee> {
+    ) -> ProviderCall<(TransactionRequest,), Eip712Fee> {
         self.client().request("zks_estimateFee", (tx,)).into()
     }
 
@@ -80,26 +80,26 @@ where
     fn estimate_gas_l1_to_l2(
         &self,
         tx: TransactionRequest,
-    ) -> ProviderCall<T, (TransactionRequest,), U256> {
+    ) -> ProviderCall<(TransactionRequest,), U256> {
         self.client().request("zks_estimateGasL1ToL2", (tx,)).into()
     }
 
     /// Retrieves the bridge hub contract address.
-    fn get_bridgehub_contract(&self) -> ProviderCall<T, NoParams, Option<Address>> {
+    fn get_bridgehub_contract(&self) -> ProviderCall<NoParams, Option<Address>> {
         self.client()
             .request_noparams("zks_getBridgehubContract")
             .into()
     }
 
     /// Retrieves the addresses of canonical bridge contracts for ZKsync Era.
-    fn get_bridge_contracts(&self) -> ProviderCall<T, NoParams, BridgeAddresses> {
+    fn get_bridge_contracts(&self) -> ProviderCall<NoParams, BridgeAddresses> {
         self.client()
             .request_noparams("zks_getBridgeContracts")
             .into()
     }
 
     /// Retrieves the L1 base token address.
-    fn get_base_token_l1_address(&self) -> ProviderCall<T, NoParams, Address> {
+    fn get_base_token_l1_address(&self) -> ProviderCall<NoParams, Address> {
         self.client()
             .request_noparams("zks_getBaseTokenL1Address")
             .into()
@@ -118,7 +118,7 @@ where
     fn get_all_account_balances(
         &self,
         address: Address,
-    ) -> ProviderCall<T, (Address,), HashMap<Address, U256>> {
+    ) -> ProviderCall<(Address,), HashMap<Address, U256>> {
         self.client()
             .request("zks_getAllAccountBalances", (address,))
             .into()
@@ -139,7 +139,7 @@ where
         sender: Address,
         msg: B256,
         l2_log_position: Option<usize>,
-    ) -> ProviderCall<T, GetMsgProofRequest, Option<L2ToL1LogProof>> {
+    ) -> ProviderCall<GetMsgProofRequest, Option<L2ToL1LogProof>> {
         self.client()
             .request(
                 "zks_getL2ToL1MsgProof",
@@ -158,17 +158,14 @@ where
         &self,
         tx_hash: B256,
         l2_to_l1_log_index: Option<usize>,
-    ) -> ProviderCall<T, (B256, Option<usize>), Option<L2ToL1LogProof>> {
+    ) -> ProviderCall<(B256, Option<usize>), Option<L2ToL1LogProof>> {
         self.client()
             .request("zks_getL2ToL1LogProof", (tx_hash, l2_to_l1_log_index))
             .into()
     }
 
     /// Retrieves details for a given L2 block.
-    fn get_block_details(
-        &self,
-        block_number: u64,
-    ) -> ProviderCall<T, (u64,), Option<BlockDetails>> {
+    fn get_block_details(&self, block_number: u64) -> ProviderCall<(u64,), Option<BlockDetails>> {
         self.client()
             .request("zks_getBlockDetails", (block_number,))
             .into()
@@ -178,7 +175,7 @@ where
     fn get_transaction_details(
         &self,
         tx_hash: B256,
-    ) -> ProviderCall<T, (B256,), Option<TransactionDetails>> {
+    ) -> ProviderCall<(B256,), Option<TransactionDetails>> {
         self.client()
             .request("zks_getTransactionDetails", (tx_hash,))
             .into()
@@ -189,7 +186,7 @@ where
     fn get_raw_block_transactions(
         &self,
         block_number: u64,
-    ) -> ProviderCall<T, (u64,), Vec<Transaction>> {
+    ) -> ProviderCall<(u64,), Vec<Transaction>> {
         self.client()
             .request("zks_getRawBlockTransactions", (block_number,))
             .into()
@@ -199,14 +196,14 @@ where
     fn get_l1_batch_details(
         &self,
         l1_batch_number: u64,
-    ) -> ProviderCall<T, (u64,), Option<L1BatchDetails>> {
+    ) -> ProviderCall<(u64,), Option<L1BatchDetails>> {
         self.client()
             .request("zks_getL1BatchDetails", (l1_batch_number,))
             .into()
     }
 
     /// Retrieves the bytecode of a transaction by its hash.
-    fn get_bytecode_by_hash(&self, tx_hash: B256) -> ProviderCall<T, (B256,), Option<Bytes>> {
+    fn get_bytecode_by_hash(&self, tx_hash: B256) -> ProviderCall<(B256,), Option<Bytes>> {
         self.client()
             .request("zks_getBytecodeByHash", (tx_hash,))
             .into()
@@ -216,19 +213,19 @@ where
     fn get_l1_batch_block_range(
         &self,
         l1_batch_number: u64,
-    ) -> ProviderCall<T, (u64,), Option<(U64, U64)>> {
+    ) -> ProviderCall<(u64,), Option<(U64, U64)>> {
         self.client()
             .request("zks_getL1BatchBlockRange", (l1_batch_number,))
             .into()
     }
 
     /// Retrieves the current L1 gas price.
-    fn get_l1_gas_price(&self) -> ProviderCall<T, NoParams, U256> {
+    fn get_l1_gas_price(&self) -> ProviderCall<NoParams, U256> {
         self.client().request_noparams("zks_getL1GasPrice").into()
     }
 
     /// Retrieves the current fee parameters.
-    fn get_fee_params(&self) -> ProviderCall<T, NoParams, FeeParams> {
+    fn get_fee_params(&self) -> ProviderCall<NoParams, FeeParams> {
         self.client().request_noparams("zks_getFeeParams").into()
     }
 
@@ -236,7 +233,7 @@ where
     fn get_protocol_version(
         &self,
         version_id: Option<u16>,
-    ) -> ProviderCall<T, (Option<u16>,), Option<ProtocolVersion>> {
+    ) -> ProviderCall<(Option<u16>,), Option<ProtocolVersion>> {
         self.client()
             .request("zks_getProtocolVersion", (version_id,))
             .into()
@@ -259,7 +256,7 @@ where
         address: Address,
         keys: Vec<B256>,
         l1_batch_number: u64,
-    ) -> ProviderCall<T, (Address, Vec<B256>, u64), Option<Proof>> {
+    ) -> ProviderCall<(Address, Vec<B256>, u64), Option<Proof>> {
         self.client()
             .request("zks_getProof", (address, keys, l1_batch_number))
             .into()
@@ -271,9 +268,7 @@ where
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
 pub trait ZksyncProviderWithWallet<T = BoxTransport>:
-    ZksyncProvider<T> + WalletProvider<Zksync>
-where
-    T: Transport + Clone,
+    ZksyncProvider + WalletProvider<Zksync>
 {
     /// Deposits specified L1 token to the L2 address.
     ///
@@ -291,28 +286,18 @@ where
         &self,
         deposit_request: &DepositRequest,
         l1_provider: &P,
-    ) -> Result<L1TransactionReceipt<T>, L1CommunicationError>
+    ) -> Result<L1TransactionReceipt, L1CommunicationError>
     where
-        P: alloy::providers::Provider<T, Ethereum>,
+        P: alloy::providers::Provider<Ethereum>,
     {
         let deposit_executor = DepositExecutor::new(l1_provider, self, deposit_request);
         deposit_executor.execute().await
     }
 }
 
-impl<P, T> ZksyncProviderWithWallet<T> for P
-where
-    T: Transport + Clone,
-    P: WalletProvider<Zksync> + Provider<T, Zksync>,
-{
-}
+impl<P> ZksyncProviderWithWallet for P where P: WalletProvider<Zksync> + Provider<Zksync> {}
 
-impl<P, T> ZksyncProvider<T> for P
-where
-    T: Transport + Clone,
-    P: Provider<T, Zksync>,
-{
-}
+impl<P> ZksyncProvider for P where P: Provider<Zksync> {}
 
 impl RecommendedFillers for Zksync {
     type RecommendedFillers = JoinFill<Eip712FeeFiller, JoinFill<NonceFiller, ChainIdFiller>>;

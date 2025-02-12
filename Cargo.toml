@@ -7,9 +7,9 @@ license = "MIT OR Apache-2.0"
 description = "ZKsync network implementation for alloy"
 
 [dependencies]
-alloy = { version = "0.9.2", default-features = false, features = [
+alloy = { version = "0.11.0", default-features = false, features = [
   "rlp",
-  "serde", # TODO: Make optional along with other `serde` dependencies
+  "serde",        # TODO: Make optional along with other `serde` dependencies
   "rpc-types",
   "signer-local",
   "reqwest",

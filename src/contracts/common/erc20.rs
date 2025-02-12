@@ -35,12 +35,11 @@ alloy::sol! {
 ///
 /// A `Result` containing the encoded token data as `Bytes` or an `Error`.
 /// ```
-pub(crate) async fn encode_token_data_for_bridge<T, P, N>(
-    erc20_contract: &ERC20Instance<T, P, N>,
+pub(crate) async fn encode_token_data_for_bridge<P, N>(
+    erc20_contract: &ERC20Instance<P, N>,
 ) -> Result<Bytes, Error>
 where
-    T: Transport + Clone,
-    P: alloy::providers::Provider<T, N>,
+    P: alloy::providers::Provider<N>,
     N: Network,
 {
     let erc20_name = erc20_contract.name().call().await?._0;

@@ -3,8 +3,8 @@ use alloy::network::eip2718::{Decodable2718, Encodable2718};
 use alloy::rlp::{Encodable, Header};
 use serde::{Deserialize, Serialize};
 
+use super::tx_type::TxType;
 use super::unsigned_tx::eip712::TxEip712;
-
 /// Transaction envelope is a wrapper around the transaction data.
 /// See [`alloy::consensus::TxEnvelope`](https://docs.rs/alloy/latest/alloy/consensus/enum.TxEnvelope.html) for more details.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -230,8 +230,16 @@ impl Encodable2718 for TxEnvelope {
 
 impl Decodable2718 for TxEnvelope {
     fn typed_decode(ty: u8, buf: &mut &[u8]) -> alloy::network::eip2718::Eip2718Result<Self> {
-        let inner = alloy::consensus::TxEnvelope::typed_decode(ty, buf)?;
-        Ok(Self::Native(inner))
+        match ty {
+            _ if ty == (TxType::Eip712 as u8) => {
+                let tx = TxEip712::decode_signed_fields(buf)?;
+                Ok(Self::Eip712(tx))
+            }
+            _ => {
+                let inner = alloy::consensus::TxEnvelope::typed_decode(ty, buf)?;
+                Ok(Self::Native(inner))
+            }
+        }
     }
 
     fn fallback_decode(buf: &mut &[u8]) -> alloy::network::eip2718::Eip2718Result<Self> {

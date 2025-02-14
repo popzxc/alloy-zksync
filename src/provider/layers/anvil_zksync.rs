@@ -1,8 +1,6 @@
 //! Layer for `anvil-zksync` wrapper.
 
-use alloy::{
-    providers::{Provider, ProviderLayer, RootProvider},
-};
+use alloy::providers::{Provider, ProviderLayer, RootProvider};
 use std::sync::{Arc, OnceLock};
 use url::Url;
 

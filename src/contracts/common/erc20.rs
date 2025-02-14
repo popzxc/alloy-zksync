@@ -1,11 +1,10 @@
 //! ZKsync-specific utilities related to ERC20 contracts.
 
+use alloy::network::Ethereum;
 use alloy::{
     contract::Error,
     dyn_abi::DynSolValue,
-    network::Network,
     primitives::{Bytes, U256},
-    transports::Transport,
 };
 use ERC20::ERC20Instance;
 
@@ -35,12 +34,11 @@ alloy::sol! {
 ///
 /// A `Result` containing the encoded token data as `Bytes` or an `Error`.
 /// ```
-pub(crate) async fn encode_token_data_for_bridge<P, N>(
-    erc20_contract: &ERC20Instance<P, N>,
+pub(crate) async fn encode_token_data_for_bridge<P>(
+    erc20_contract: &ERC20Instance<(), P>,
 ) -> Result<Bytes, Error>
 where
-    P: alloy::providers::Provider<N>,
-    N: Network,
+    P: alloy::providers::Provider<Ethereum>,
 {
     let erc20_name = erc20_contract.name().call().await?._0;
     let erc20_symbol = erc20_contract.symbol().call().await?._0;

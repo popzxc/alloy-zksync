@@ -7,7 +7,7 @@ use alloy::{
         fillers::{FillerControlFlow, TxFiller},
         Provider, SendableTx,
     },
-    transports::{Transport, TransportResult},
+    transports::TransportResult,
 };
 
 use crate::network::{transaction_request::TransactionRequest, Zksync};

@@ -6,7 +6,6 @@ use alloy::rpc::types::{Log, TransactionReceipt};
 
 use super::receipt_envelope::ReceiptEnvelope;
 use crate::types::*;
-use alloy::eips::eip7702::SignedAuthorization;
 
 /// Transaction receipt type that includes L2 specific fields.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

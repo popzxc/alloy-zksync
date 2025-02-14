@@ -23,9 +23,8 @@ use alloy::{
     primitives::{Address, Bytes, U256},
     providers::{utils::Eip1559Estimation, WalletProvider},
     rpc::types::eth::TransactionRequest as L1TransactionRequest,
-    transports::Transport,
 };
-use std::{marker::PhantomData, str::FromStr};
+use std::str::FromStr;
 
 pub const REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT: u64 = 800;
 
@@ -248,7 +247,7 @@ where
 
     async fn get_bridge_l2_tx_fee_params<P>(
         &self,
-        bridge_hub_contract: &Bridgehub::BridgehubInstance<P, Ethereum>,
+        bridge_hub_contract: &Bridgehub::BridgehubInstance<(), &P>,
         l1_to_l2_tx: TransactionRequest,
         l2_chain_id: U256,
         fee_params: &FeeParams,

@@ -3,7 +3,6 @@ use crate::{contracts::l1::bridge_hub::Bridgehub::NewPriorityRequest, network::Z
 use alloy::{
     providers::{PendingTransactionBuilder, RootProvider},
     rpc::types::eth::TransactionReceipt,
-    transports::Transport,
 };
 
 /// A wrapper struct to hold L1 transaction receipt and L2 provider

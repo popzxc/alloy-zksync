@@ -2,7 +2,6 @@
 
 use alloy::{
     providers::{Provider, ProviderLayer, RootProvider},
-    transports::Transport,
 };
 use std::sync::{Arc, OnceLock};
 use url::Url;

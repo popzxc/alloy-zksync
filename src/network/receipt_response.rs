@@ -43,6 +43,11 @@ impl ReceiptResponse {
     pub fn l2_to_l1_logs(&self) -> &[L2ToL1Log] {
         &self.l2_to_l1_logs
     }
+
+    /// Returns the authorization list for the transaction.
+    pub fn authorization_list(&self) -> Option<&Vec<Address>> {
+        None
+    }
 }
 
 impl<T: TxReceipt<Log = Log>> alloy::network::ReceiptResponse for ReceiptResponse<T> {

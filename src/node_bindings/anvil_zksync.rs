@@ -459,7 +459,6 @@ mod tests {
         let anvil_zksync = AnvilZKsync::new().chain_id(chain_id).spawn();
         let rpc_url = anvil_zksync.endpoint_url();
         let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
             .on_http(rpc_url);
 
         let returned_chain_id = provider.get_chain_id().await.unwrap();
@@ -475,7 +474,6 @@ mod tests {
         let anvil_zksync = AnvilZKsync::new().fork("mainnet").spawn();
         let rpc_url = anvil_zksync.endpoint_url();
         let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
             .on_http(rpc_url);
 
         let chain_id = provider.get_chain_id().await.unwrap();
@@ -496,7 +494,6 @@ mod tests {
 
         let rpc_url = anvil_zksync.endpoint_url();
         let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
             .on_http(rpc_url);
 
         // Query the latest block number to verify the fork block number.

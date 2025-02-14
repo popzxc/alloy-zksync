@@ -324,8 +324,6 @@ mod tests {
     use alloy::primitives::address;
     use alloy::primitives::{Address, Bytes, U256};
     use alloy::providers::{fillers::FillProvider, RootProvider};
-    use alloy::transports::http::Http;
-    use reqwest::Client;
     use std::net::SocketAddr;
 
     use crate::network::unsigned_tx::eip712::PaymasterParams;
@@ -342,8 +340,7 @@ mod tests {
     }
     type ZKsyncTestProvider = FillProvider<
         JoinFill<Identity, JoinFill<Eip712FeeFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
-        RootProvider<Http<Client>, Zksync>,
-        Http<Client>,
+        RootProvider<Zksync>,
         Zksync,
     >;
     async fn run_server_and_test<Fut>(

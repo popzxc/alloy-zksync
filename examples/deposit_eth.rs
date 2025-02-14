@@ -28,13 +28,11 @@ async fn main() -> Result<()> {
     let wallet = EthereumWallet::from(signer.clone());
 
     let l1_provider = ProviderBuilder::new()
-        .with_recommended_fillers()
         .wallet(wallet)
         .on_http(l1_rpc_url);
 
     let zksync_wallet: ZksyncWallet = ZksyncWallet::from(signer.clone());
     let zksync_provider = zksync_provider()
-        .with_recommended_fillers()
         .wallet(zksync_wallet)
         .on_http(l2_rpc_url);
 

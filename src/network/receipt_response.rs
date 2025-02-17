@@ -6,7 +6,6 @@ use alloy::rpc::types::{Log, TransactionReceipt};
 
 use super::receipt_envelope::ReceiptEnvelope;
 use crate::types::*;
-use alloy::eips::eip7702::SignedAuthorization;
 
 /// Transaction receipt type that includes L2 specific fields.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -43,6 +42,11 @@ impl ReceiptResponse {
     /// L2 to L1 logs generated within this transaction.
     pub fn l2_to_l1_logs(&self) -> &[L2ToL1Log] {
         &self.l2_to_l1_logs
+    }
+
+    /// Returns the authorization list for the transaction.
+    pub fn authorization_list(&self) -> Option<&Vec<Address>> {
+        None
     }
 }
 
@@ -105,11 +109,6 @@ impl<T: TxReceipt<Log = Log>> alloy::network::ReceiptResponse for ReceiptRespons
     /// Address of the receiver.
     fn to(&self) -> Option<Address> {
         self.inner.to()
-    }
-
-    /// EIP-7702 Authorization list.
-    fn authorization_list(&self) -> Option<&[SignedAuthorization]> {
-        self.inner.authorization_list()
     }
 
     /// Returns the cumulative gas used at this receipt.

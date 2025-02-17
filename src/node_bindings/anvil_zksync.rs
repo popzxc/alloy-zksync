@@ -177,7 +177,7 @@ impl AnvilZKsync {
     pub fn new() -> Self {
         let mut self_ = Self::default();
         // Assign a random port so that we can run multiple instances.
-        let port = rand::thread_rng().gen_range(8000..16000);
+        let port = rand::rng().random_range(8000..16000);
         self_.port = Some(port);
         self_
     }
@@ -458,9 +458,7 @@ mod tests {
         let chain_id = 92;
         let anvil_zksync = AnvilZKsync::new().chain_id(chain_id).spawn();
         let rpc_url = anvil_zksync.endpoint_url();
-        let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
-            .on_http(rpc_url);
+        let provider = ProviderBuilder::new().on_http(rpc_url);
 
         let returned_chain_id = provider.get_chain_id().await.unwrap();
 
@@ -474,9 +472,7 @@ mod tests {
     async fn fork_initializes_correct_chain() {
         let anvil_zksync = AnvilZKsync::new().fork("mainnet").spawn();
         let rpc_url = anvil_zksync.endpoint_url();
-        let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
-            .on_http(rpc_url);
+        let provider = ProviderBuilder::new().on_http(rpc_url);
 
         let chain_id = provider.get_chain_id().await.unwrap();
 
@@ -495,9 +491,7 @@ mod tests {
             .spawn();
 
         let rpc_url = anvil_zksync.endpoint_url();
-        let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
-            .on_http(rpc_url);
+        let provider = ProviderBuilder::new().on_http(rpc_url);
 
         // Query the latest block number to verify the fork block number.
         let block_number = provider.get_block_number().await.unwrap();

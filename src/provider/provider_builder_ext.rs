@@ -15,17 +15,12 @@ use crate::{
 
 type AnvilZKsyncProviderResult<T> = Result<T, AnvilZKsyncError>;
 type JoinedZksyncWalletFiller<F> = JoinFill<F, WalletFiller<ZksyncWallet>>;
-type ZksyncHttpTransport = alloy::transports::http::Http<reqwest::Client>;
 
 /// ZKsync-specific extensions for the [`ProviderBuilder`](https://docs.rs/alloy/latest/alloy/providers/struct.ProviderBuilder.html).
 pub trait ProviderBuilderExt<L, F>: Sized
 where
-    F: TxFiller<Zksync> + ProviderLayer<L::Provider, ZksyncHttpTransport, Zksync>,
-    L: ProviderLayer<
-        AnvilZKsyncProvider<RootProvider<ZksyncHttpTransport, Zksync>, ZksyncHttpTransport>,
-        ZksyncHttpTransport,
-        Zksync,
-    >,
+    F: TxFiller<Zksync> + ProviderLayer<L::Provider, Zksync>,
+    L: ProviderLayer<AnvilZKsyncProvider<RootProvider<Zksync>>, Zksync>,
 {
     /// Build a provider that would spawn `anvil-zksync` instance in background and will use it.
     fn on_anvil_zksync(self) -> F::Provider;
@@ -33,11 +28,7 @@ where
     /// Same as [`on_anvil_zksync`](Self::on_anvil_zksync), but also configures a wallet backed by anvil-zksync keys.
     fn on_anvil_zksync_with_wallet(
         self,
-    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
-        L::Provider,
-        ZksyncHttpTransport,
-        Zksync,
-    >>::Provider;
+    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<L::Provider, Zksync>>::Provider;
 
     /// Same as [`on_anvil_zksync`](Self::on_anvil_zksync), allows to configure `anvil-zksync`.
     fn on_anvil_zksync_with_config(self, f: impl FnOnce(AnvilZKsync) -> AnvilZKsync)
@@ -47,33 +38,21 @@ where
     fn on_anvil_zksync_with_wallet_and_config(
         self,
         f: impl FnOnce(AnvilZKsync) -> AnvilZKsync,
-    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
-        L::Provider,
-        ZksyncHttpTransport,
-        Zksync,
-    >>::Provider;
+    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<L::Provider, Zksync>>::Provider;
 
     /// Fallible version of [`on_anvil_zksync_with_wallet_and_config`](Self::on_anvil_zksync_with_wallet_and_config).
     fn try_on_anvil_zksync_with_wallet_and_config(
         self,
         f: impl FnOnce(AnvilZKsync) -> AnvilZKsync,
     ) -> AnvilZKsyncProviderResult<
-        <JoinedZksyncWalletFiller<F> as ProviderLayer<
-            L::Provider,
-            ZksyncHttpTransport,
-            Zksync,
-        >>::Provider,
+        <JoinedZksyncWalletFiller<F> as ProviderLayer<L::Provider, Zksync>>::Provider,
     >;
 }
 
 impl<L, F> ProviderBuilderExt<L, F> for ProviderBuilder<L, F, Zksync>
 where
-    F: TxFiller<Zksync> + ProviderLayer<L::Provider, ZksyncHttpTransport, Zksync>,
-    L: ProviderLayer<
-        AnvilZKsyncProvider<RootProvider<ZksyncHttpTransport, Zksync>, ZksyncHttpTransport>,
-        ZksyncHttpTransport,
-        Zksync,
-    >,
+    F: TxFiller<Zksync> + ProviderLayer<L::Provider, Zksync>,
+    L: ProviderLayer<AnvilZKsyncProvider<RootProvider<Zksync>>, Zksync>,
 {
     fn on_anvil_zksync(self) -> F::Provider {
         self.on_anvil_zksync_with_config(std::convert::identity)
@@ -81,11 +60,7 @@ where
 
     fn on_anvil_zksync_with_wallet(
         self,
-    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
-        L::Provider,
-        ZksyncHttpTransport,
-        Zksync,
-    >>::Provider{
+    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<L::Provider, Zksync>>::Provider {
         self.on_anvil_zksync_with_wallet_and_config(std::convert::identity)
     }
 
@@ -102,11 +77,7 @@ where
     fn on_anvil_zksync_with_wallet_and_config(
         self,
         f: impl FnOnce(AnvilZKsync) -> AnvilZKsync,
-    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<
-        L::Provider,
-        ZksyncHttpTransport,
-        Zksync,
-    >>::Provider{
+    ) -> <JoinedZksyncWalletFiller<F> as ProviderLayer<L::Provider, Zksync>>::Provider {
         self.try_on_anvil_zksync_with_wallet_and_config(f).unwrap()
     }
 
@@ -118,12 +89,8 @@ where
         self,
         f: impl FnOnce(AnvilZKsync) -> AnvilZKsync,
     ) -> AnvilZKsyncProviderResult<
-        <JoinedZksyncWalletFiller<F> as ProviderLayer<
-            L::Provider,
-            ZksyncHttpTransport,
-            Zksync,
-        >>::Provider,
-    >{
+        <JoinedZksyncWalletFiller<F> as ProviderLayer<L::Provider, Zksync>>::Provider,
+    > {
         use alloy::signers::Signer;
 
         let anvil_zksync_layer = AnvilZKsyncLayer::from(f(Default::default()));

@@ -37,10 +37,7 @@ async fn main() -> Result<()> {
             .expect("should parse private key");
     let wallet = EthereumWallet::from(signer.clone());
 
-    let l1_provider = ProviderBuilder::new()
-        .with_recommended_fillers()
-        .wallet(wallet)
-        .on_http(l1_rpc_url);
+    let l1_provider = ProviderBuilder::new().wallet(wallet).on_http(l1_rpc_url);
 
     let l1_gas_price = l1_provider.get_gas_price().await?;
     // Deploy a test ERC20 token to be used for the deposit.
@@ -51,10 +48,7 @@ async fn main() -> Result<()> {
     println!("L1 ERC20 token address: {}", erc20_token_address);
 
     let zksync_wallet: ZksyncWallet = ZksyncWallet::from(signer.clone());
-    let zksync_provider = zksync_provider()
-        .with_recommended_fillers()
-        .wallet(zksync_wallet)
-        .on_http(l2_rpc_url);
+    let zksync_provider = zksync_provider().wallet(zksync_wallet).on_http(l2_rpc_url);
 
     // use another test rich wallet as a receiver
     // https://github.com/matter-labs/local-setup/blob/main/rich-wallets.json

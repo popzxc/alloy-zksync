@@ -24,6 +24,15 @@ fn serialize_bytes_custom<S: serde::Serializer>(
     serializer.serialize_bytes(&bytes.0)
 }
 
+fn serialize_bytes_opt<S: serde::Serializer>(
+    value: &Option<Bytes>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    match value {
+        Some(bytes) => serializer.serialize_bytes(&bytes.0),
+        None => serializer.serialize_none(),
+    }
+}
 // TODO: The structure should be correct by construction, e.g. we should not allow
 // creating or deserializing meta that has invalid factory deps.
 // TODO: Serde here is used for `TransactionRequest` needs, this has to be reworked once
@@ -45,6 +54,7 @@ pub struct Eip712Meta {
     /// Custom signature for the transaction.
     ///
     /// Should only be set in case of using a custom account implementation.
+    #[serde(serialize_with = "serialize_bytes_opt")]
     pub custom_signature: Option<Bytes>,
     /// Paymaster parameters for the transaction.
     pub paymaster_params: Option<PaymasterParams>,
@@ -138,5 +148,38 @@ impl Encodable for PaymasterParams {
         h.encode(out);
         self.paymaster.encode(out);
         self.paymaster_input.encode(out);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloy::primitives::address;
+    use serde_json::json;
+
+    #[test]
+    fn test_bytes_get_serialized_into_vec() {
+        let meta = Eip712Meta {
+            gas_per_pubdata: U256::from(4),
+            factory_deps: vec![vec![1, 2].into()],
+            custom_signature: Some(vec![3, 4].into()),
+            paymaster_params: Some(PaymasterParams {
+                paymaster: address!("99E12239CBf8112fBB3f7Fd473d0558031abcbb5"),
+                paymaster_input: vec![5, 6].into(),
+            }),
+        };
+
+        let expected_json = json!({
+            "gasPerPubdata": "0x4",
+            "factoryDeps": [[1,2]],
+            "customSignature": [3, 4],
+            "paymasterParams": {
+                 "paymaster": "0x99e12239cbf8112fbb3f7fd473d0558031abcbb5",
+                 "paymasterInput": [5, 6],
+            }
+        });
+
+        let actual_json = serde_json::to_value(&meta).unwrap();
+        assert_eq!(expected_json, actual_json);
     }
 }

@@ -60,6 +60,7 @@ where
 #[derive(Clone, Debug)]
 pub struct AnvilZKsyncProvider<P> {
     inner: P,
+    _anvil: Arc<AnvilZKsyncInstance>,
 }
 
 impl<P> AnvilZKsyncProvider<P>
@@ -69,7 +70,7 @@ where
     /// Creates a new `AnvilZKsyncProvider` with the given inner provider and anvil
     /// instance.
     pub fn new(inner: P, _anvil: Arc<AnvilZKsyncInstance>) -> Self {
-        Self { inner }
+        Self { inner, _anvil }
     }
 }
 

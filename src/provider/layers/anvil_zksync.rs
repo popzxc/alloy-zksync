@@ -1,13 +1,7 @@
 //! Layer for `anvil-zksync` wrapper.
 
-use alloy::{
-    providers::{Provider, ProviderLayer, RootProvider},
-    transports::Transport,
-};
-use std::{
-    marker::PhantomData,
-    sync::{Arc, OnceLock},
-};
+use alloy::providers::{Provider, ProviderLayer, RootProvider};
+use std::sync::{Arc, OnceLock};
 use url::Url;
 
 use crate::{
@@ -49,12 +43,11 @@ impl From<AnvilZKsync> for AnvilZKsyncLayer {
     }
 }
 
-impl<P, T> ProviderLayer<P, T, Zksync> for AnvilZKsyncLayer
+impl<P> ProviderLayer<P, Zksync> for AnvilZKsyncLayer
 where
-    P: Provider<T, Zksync>,
-    T: Transport + Clone,
+    P: Provider<Zksync>,
 {
-    type Provider = AnvilZKsyncProvider<P, T>;
+    type Provider = AnvilZKsyncProvider<P>;
 
     fn layer(&self, inner: P) -> Self::Provider {
         let anvil = self.instance();
@@ -65,35 +58,28 @@ where
 /// A provider that wraps an [`AnvilZKsyncInstance`], preventing the instance from
 /// being dropped while the provider is in use.
 #[derive(Clone, Debug)]
-pub struct AnvilZKsyncProvider<P, T> {
+pub struct AnvilZKsyncProvider<P> {
     inner: P,
     _anvil: Arc<AnvilZKsyncInstance>,
-    _pd: PhantomData<fn() -> T>,
 }
 
-impl<P, T> AnvilZKsyncProvider<P, T>
+impl<P> AnvilZKsyncProvider<P>
 where
-    P: Provider<T, Zksync>,
-    T: Transport + Clone,
+    P: Provider<Zksync>,
 {
     /// Creates a new `AnvilZKsyncProvider` with the given inner provider and anvil
     /// instance.
     pub fn new(inner: P, _anvil: Arc<AnvilZKsyncInstance>) -> Self {
-        Self {
-            inner,
-            _anvil,
-            _pd: PhantomData,
-        }
+        Self { inner, _anvil }
     }
 }
 
-impl<P, T> Provider<T, Zksync> for AnvilZKsyncProvider<P, T>
+impl<P> Provider<Zksync> for AnvilZKsyncProvider<P>
 where
-    P: Provider<T, Zksync>,
-    T: Transport + Clone,
+    P: Provider<Zksync>,
 {
     #[inline(always)]
-    fn root(&self) -> &RootProvider<T, Zksync> {
+    fn root(&self) -> &RootProvider<Zksync> {
         self.inner.root()
     }
 }

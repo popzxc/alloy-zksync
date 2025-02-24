@@ -1,9 +1,9 @@
-use core::fmt;
-
 use alloy::consensus::{TxReceipt, TxType};
-use alloy::network::eip2718::{Decodable2718, Eip2718Error, Encodable2718};
+use alloy::network::eip2718::{Decodable2718, Eip2718Error, Encodable2718, Typed2718};
 use alloy::network::AnyReceiptEnvelope;
 use alloy::primitives::Log;
+use core::convert::TryInto;
+use core::fmt;
 use serde::{Deserialize, Serialize};
 
 /// Receipt envelope is a wrapper around the receipt data.
@@ -58,6 +58,15 @@ where
         match self {
             ReceiptEnvelope::Native(re) => re.logs(),
             ReceiptEnvelope::Eip712(re) => re.logs(),
+        }
+    }
+}
+
+impl Typed2718 for ReceiptEnvelope {
+    fn ty(&self) -> u8 {
+        match self {
+            ReceiptEnvelope::Native(re) => re.ty(),
+            ReceiptEnvelope::Eip712(re) => re.ty(),
         }
     }
 }

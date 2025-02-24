@@ -23,9 +23,8 @@ use alloy::{
     primitives::{Address, Bytes, U256},
     providers::{utils::Eip1559Estimation, WalletProvider},
     rpc::types::eth::TransactionRequest as L1TransactionRequest,
-    transports::Transport,
 };
-use std::{marker::PhantomData, str::FromStr};
+use std::str::FromStr;
 
 pub const REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT: u64 = 800;
 
@@ -134,23 +133,20 @@ pub fn scale_l1_gas_limit(l1_gas_limit: u64) -> u64 {
 }
 
 /// Type that handles deposit logic for various scenarios: deposit ETH, ERC20 etc.
-pub struct DepositExecutor<'a, T, P1, P2>
+pub struct DepositExecutor<'a, P1, P2>
 where
-    P1: alloy::providers::Provider<T, Ethereum>,
-    P2: ZksyncProvider<T> + WalletProvider<Zksync> + ?Sized,
-    T: Transport + Clone,
+    P1: alloy::providers::Provider<Ethereum>,
+    P2: ZksyncProvider + WalletProvider<Zksync> + ?Sized,
 {
     l1_provider: &'a P1,
     l2_provider: &'a P2,
     request: &'a DepositRequest,
-    _transport_phantom: PhantomData<T>,
 }
 
-impl<'a, T, P1, P2> DepositExecutor<'a, T, P1, P2>
+impl<'a, P1, P2> DepositExecutor<'a, P1, P2>
 where
-    P1: alloy::providers::Provider<T, Ethereum>,
-    P2: ZksyncProvider<T> + WalletProvider<Zksync> + ?Sized,
-    T: Transport + Clone,
+    P1: alloy::providers::Provider<Ethereum>,
+    P2: ZksyncProvider + WalletProvider<Zksync> + ?Sized,
 {
     /// Prepares an executor for a particular deposit request.
     pub fn new(l1_provider: &'a P1, l2_provider: &'a P2, request: &'a DepositRequest) -> Self {
@@ -158,7 +154,6 @@ where
             l1_provider,
             l2_provider,
             request,
-            _transport_phantom: PhantomData,
         }
     }
 
@@ -250,16 +245,15 @@ where
         Ok(l1_gas_limit)
     }
 
-    async fn get_bridge_l2_tx_fee_params<Tr, P>(
+    async fn get_bridge_l2_tx_fee_params<P>(
         &self,
-        bridge_hub_contract: &Bridgehub::BridgehubInstance<Tr, P, Ethereum>,
+        bridge_hub_contract: &Bridgehub::BridgehubInstance<(), &P>,
         l1_to_l2_tx: TransactionRequest,
         l2_chain_id: U256,
         fee_params: &FeeParams,
     ) -> Result<BridgeL2TxFeeParams, L1CommunicationError>
     where
-        Tr: Transport + Clone,
-        P: alloy::providers::Provider<Tr, Ethereum>,
+        P: alloy::providers::Provider<Ethereum>,
     {
         let gas_limit = self
             .l2_provider
@@ -454,7 +448,7 @@ where
     async fn submit(
         &self,
         tx_request: &L1TransactionRequest,
-    ) -> Result<L1TransactionReceipt<T>, L1CommunicationError> {
+    ) -> Result<L1TransactionReceipt, L1CommunicationError> {
         let l1_gas_limit = self.get_l1_tx_gas_limit(tx_request).await?;
         let l1_tx_request = tx_request.clone().with_gas_limit(l1_gas_limit);
         let l1_tx_receipt = self
@@ -491,7 +485,7 @@ where
     /// ## Returns
     ///
     /// L1TransactionReceipt of the deposit transaction.
-    pub async fn execute(&self) -> Result<L1TransactionReceipt<T>, L1CommunicationError> {
+    pub async fn execute(&self) -> Result<L1TransactionReceipt, L1CommunicationError> {
         let l2_chain_id = U256::from(self.l2_provider.get_chain_id().await.map_err(|_| {
             L1CommunicationError::Custom("Error occurred while fetching L2 chain id.")
         })?);

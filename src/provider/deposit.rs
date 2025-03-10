@@ -19,9 +19,10 @@ use crate::{
     utils::{apply_l1_to_l2_alias, ETHER_L1_ADDRESS},
 };
 use alloy::{
+    eips::eip1559::Eip1559Estimation,
     network::{Ethereum, NetworkWallet, TransactionBuilder},
     primitives::{Address, Bytes, U256},
-    providers::WalletProvider,
+    providers::{utils::Eip1559Estimator, WalletProvider},
     rpc::types::eth::TransactionRequest as L1TransactionRequest,
 };
 use std::str::FromStr;
@@ -212,7 +213,12 @@ where
         // https://github.com/zksync-sdk/zksync-ethers/blob/64763688d1bb5cee4a4c220c3841b803c74b0d05/src/adapters.ts#L2069
         let base_l1_fees_data = self
             .l1_provider
-            .estimate_eip1559_fees()
+            .estimate_eip1559_fees_with(Eip1559Estimator::new(|base_fee_per_gas, _| {
+                Eip1559Estimation {
+                    max_fee_per_gas: base_fee_per_gas * 3 / 2,
+                    max_priority_fee_per_gas: 0,
+                }
+            }))
             .await
             .map_err(|_| {
                 L1CommunicationError::Custom("Error occurred while estimating L1 base fees.")

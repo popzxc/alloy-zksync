@@ -129,7 +129,7 @@ mod serde_from {
     use crate::network::transaction_response::TransactionResponse;
     use crate::network::tx_envelope::TxEnvelope;
     use crate::network::unsigned_tx::eip712::TxEip712;
-    use alloy::consensus::Signed;
+    use alloy::consensus::{transaction::Recovered, Signed};
     use alloy::primitives::BlockHash;
     use serde::{Deserialize, Serialize};
 
@@ -162,12 +162,11 @@ mod serde_from {
                     let from = value.inner.tx().from;
                     TransactionResponse {
                         inner: alloy::rpc::types::transaction::Transaction {
-                            inner: TxEnvelope::Eip712(value.inner),
+                            inner: Recovered::new_unchecked(TxEnvelope::Eip712(value.inner), from),
                             block_hash: value.block_hash,
                             block_number: value.block_number,
                             transaction_index: value.transaction_index,
                             effective_gas_price: value.effective_gas_price,
-                            from,
                         },
                     }
                 }
@@ -177,11 +176,11 @@ mod serde_from {
 
     impl From<TransactionResponse> for TransactionEither {
         fn from(value: TransactionResponse) -> Self {
-            match value.inner.inner {
+            match value.inner.inner.as_ref() {
                 TxEnvelope::Native(_) => TransactionEither::Regular(value.inner),
                 TxEnvelope::Eip712(signed) => {
                     TransactionEither::WithoutFrom(TransactionWithoutFrom {
-                        inner: signed,
+                        inner: signed.clone(),
                         block_hash: value.inner.block_hash,
                         block_number: value.inner.block_number,
                         transaction_index: value.inner.transaction_index,

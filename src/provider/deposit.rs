@@ -21,7 +21,7 @@ use crate::{
 use alloy::{
     network::{Ethereum, NetworkWallet, TransactionBuilder},
     primitives::{Address, Bytes, U256},
-    providers::{utils::Eip1559Estimation, WalletProvider},
+    providers::WalletProvider,
     rpc::types::eth::TransactionRequest as L1TransactionRequest,
 };
 use std::str::FromStr;
@@ -212,10 +212,7 @@ where
         // https://github.com/zksync-sdk/zksync-ethers/blob/64763688d1bb5cee4a4c220c3841b803c74b0d05/src/adapters.ts#L2069
         let base_l1_fees_data = self
             .l1_provider
-            .estimate_eip1559_fees(Some(|base_fee_per_gas, _| Eip1559Estimation {
-                max_fee_per_gas: base_fee_per_gas * 3 / 2,
-                max_priority_fee_per_gas: 0,
-            }))
+            .estimate_eip1559_fees()
             .await
             .map_err(|_| {
                 L1CommunicationError::Custom("Error occurred while estimating L1 base fees.")
@@ -232,15 +229,15 @@ where
         &self,
         tx_request: &L1TransactionRequest,
     ) -> Result<u64, L1CommunicationError> {
-        let l1_tx_gas_estimation =
-            self.l1_provider
-                .estimate_gas(tx_request)
-                .await
-                .map_err(|_| {
-                    L1CommunicationError::Custom(
-                        "Error occurred while estimating gas limit for the L1 transaction.",
-                    )
-                })?;
+        let l1_tx_gas_estimation = self
+            .l1_provider
+            .estimate_gas(tx_request.clone())
+            .await
+            .map_err(|_| {
+                L1CommunicationError::Custom(
+                    "Error occurred while estimating gas limit for the L1 transaction.",
+                )
+            })?;
         let l1_gas_limit = scale_l1_gas_limit(l1_tx_gas_estimation);
         Ok(l1_gas_limit)
     }

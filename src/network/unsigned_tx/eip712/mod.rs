@@ -1,6 +1,8 @@
 //! EIP-712 transaction type, specific to the ZKsync network.
 
-use alloy::consensus::{SignableTransaction, Signed, Transaction, Typed2718};
+use alloy::consensus::{
+    transaction::RlpEcdsaEncodableTx, SignableTransaction, Signed, Transaction, Typed2718,
+};
 use alloy::primitives::PrimitiveSignature as Signature;
 use alloy::primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
 use alloy::rlp::{BufMut, Decodable, Encodable, Header};
@@ -362,6 +364,23 @@ impl SignableTransaction<Signature> for TxEip712 {
         let hash = keccak256(buf);
 
         Signed::new_unchecked(self, signature, hash)
+    }
+}
+
+impl RlpEcdsaEncodableTx for TxEip712 {
+    #[doc = " The default transaction type for this transaction."]
+    const DEFAULT_TX_TYPE: u8 = 0;
+
+    #[doc = " Calculate the encoded length of the transaction\'s fields, without a RLP"]
+    #[doc = " header."]
+    fn rlp_encoded_fields_length(&self) -> usize {
+        self.rlp_encoded_length()
+    }
+
+    #[doc = " Encodes only the transaction\'s fields into the desired buffer, without"]
+    #[doc = " a RLP header."]
+    fn rlp_encode_fields(&self, out: &mut dyn BufMut) {
+        self.rlp_encode(out);
     }
 }
 

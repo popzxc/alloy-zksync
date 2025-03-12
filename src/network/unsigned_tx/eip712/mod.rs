@@ -13,7 +13,7 @@ pub use self::meta::{Eip712Meta, PaymasterParams};
 pub use self::utils::{hash_bytecode, BytecodeHashError};
 
 mod meta;
-mod signing;
+pub mod signing;
 mod utils;
 
 /// A ZKsync-native transaction type with additional fields.
@@ -107,7 +107,7 @@ impl TxEip712 {
 
     /// Inner encoding function that is used for both rlp [`Encodable`] trait and for calculating
     /// hash that for eip2718 does not require a rlp header.
-    pub(crate) fn encode_with_signature(
+    pub fn encode_with_signature(
         &self,
         signature: &Signature,
         out: &mut dyn BufMut,

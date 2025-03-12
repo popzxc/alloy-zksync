@@ -12,14 +12,16 @@ alloy = { version = "0.12.1", default-features = false, features = [
   "serde",        # TODO: Make optional along with other `serde` dependencies
   "rpc-types",
   "signer-local",
-  "reqwest",
+  "reqwest-rustls-tls",
   "contract",
 ] }
 async-trait = "0.1.86"
 chrono = { version = "0.4.38", features = ["serde"] }
 k256 = "0.13.3"
 rand = "0.9.0"
-reqwest = "0.12.8"
+reqwest = { version = "0.12", default-features = false, features = [
+  "rustls-tls",
+] }
 serde = "1.0.203"
 thiserror = "2.0.11"
 tracing = "0.1.40"

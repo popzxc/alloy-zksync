@@ -368,9 +368,6 @@ impl SignableTransaction<Signature> for TxEip712 {
 }
 
 impl RlpEcdsaEncodableTx for TxEip712 {
-    #[doc = " The default transaction type for this transaction."]
-    const DEFAULT_TX_TYPE: u8 = TxType::Eip712 as u8;
-
     #[doc = " Calculate the encoded length of the transaction\'s fields, without a RLP"]
     #[doc = " header."]
     fn rlp_encoded_fields_length(&self) -> usize {

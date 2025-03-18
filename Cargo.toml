@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 description = "ZKsync network implementation for alloy"
 
 [dependencies]
-alloy = { version = "0.12.1", default-features = false, features = [
+alloy = { version = "0.12.5", default-features = false, features = [
   "rlp",
   "serde",        # TODO: Make optional along with other `serde` dependencies
   "rpc-types",
@@ -19,9 +19,6 @@ async-trait = "0.1.86"
 chrono = { version = "0.4.38", features = ["serde"] }
 k256 = "0.13.3"
 rand = "0.9.0"
-reqwest = { version = "0.12", default-features = false, features = [
-  "rustls-tls",
-] }
 serde = "1.0.203"
 thiserror = "2.0.11"
 tracing = "0.1.40"

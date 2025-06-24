@@ -28,7 +28,7 @@ jobs:
         with:
           toolchain: ${{ env.msrv }}
       - name: Install sccache
-        uses: mozilla-actions/sccache-action@v0.0.4
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Build
         run: cargo build --all-features
@@ -53,7 +53,7 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy, rust-src
       - name: Install sccache
-        uses: mozilla-actions/sccache-action@v0.0.4
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install anvil-zksync
         uses: dutterbutter/anvil-zksync-action@v1.1.0
@@ -104,7 +104,7 @@ jobs:
         with:
           toolchain: ${{ env.msrv }}
       - name: Install sccache
-        uses: mozilla-actions/sccache-action@v0.0.4
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Build docs
         run: |

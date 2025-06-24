@@ -177,7 +177,7 @@ impl AnvilZKsync {
     pub fn new() -> Self {
         let mut self_ = Self::default();
         // Assign a random port so that we can run multiple instances.
-        let port = rand::rng().random_range(8000..16000);
+        let port = rand::thread_rng().gen_range(8000..16000);
         self_.port = Some(port);
         self_
     }

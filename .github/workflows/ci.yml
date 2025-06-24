@@ -36,12 +36,6 @@ jobs:
       - name: Build (no features)
         run: cargo build --no-default-features
 
-  cargo-deny:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: EmbarkStudios/cargo-deny-action@v2
-
   test:
     runs-on: ubuntu-latest
     steps:
@@ -64,6 +58,9 @@ jobs:
         run: cargo clippy --all-features --all-targets -- -D warnings
       - name: Clippy (no features)
         run: cargo clippy --no-default-features --all-targets -- -D warnings
+        
+      - name: Cargo deny
+        uses: EmbarkStudios/cargo-deny-action@v2
 
       - name: Run tests
         run: cargo test --all-features --all-targets

@@ -59,8 +59,13 @@ jobs:
       - name: Clippy (no features)
         run: cargo clippy --no-default-features --all-targets -- -D warnings
         
-      - name: Cargo deny
-        uses: EmbarkStudios/cargo-deny-action@v2
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+
+      - name: Cargo deny check
+        run: cargo deny check
 
       - name: Run tests
         run: cargo test --all-features --all-targets

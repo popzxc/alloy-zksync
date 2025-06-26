@@ -1,6 +1,6 @@
 # alloy-zksync
 
-[Latest release docs](https://docs.rs/alloy-zksync) | [Main branch docs](https://popzxc.github.io/alloy-zksync/alloy_zksync/)
+[Latest release docs](https://docs.rs/alloy-zksync) | [Main branch docs](https://matter-labs.github.io/alloy-zksync/alloy_zksync/)
 
 This crate provides implementation of the ZKsync network support for the [alloy](https://github.com/alloy-rs/alloy/)
 ecosystem.

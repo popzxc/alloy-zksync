@@ -7,7 +7,7 @@ use alloy::{
 };
 use alloy_zksync::{
     network::transaction_request::TransactionRequest,
-    provider::{zksync_provider, ProviderBuilderExt, ZksyncProvider},
+    provider::{zksync_provider, ProviderBuilderExt},
 };
 
 #[tokio::main]
@@ -27,10 +27,6 @@ async fn main() -> anyhow::Result<()> {
     // Send the transaction and wait for inclusion.
     let receipt = provider.send_transaction(tx).await?.get_receipt().await?;
     println!("Got receipt: {receipt:#?}");
-
-    // Call `zks` namespace RPC.
-    let l1_chain_id = provider.get_l1_chain_id().await?;
-    println!("L1 chain ID is: {l1_chain_id}");
 
     Ok(())
 }

@@ -177,7 +177,7 @@ impl AnvilZKsync {
     pub fn new() -> Self {
         let mut self_ = Self::default();
         // Assign a random port so that we can run multiple instances.
-        let port = rand::rng().random_range(8000..16000);
+        let port = rand::thread_rng().gen_range(8000..16000);
         self_.port = Some(port);
         self_
     }
@@ -483,7 +483,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn fork_initializes_at_specified_block() {
-        let fork_block_number = 47854817;
+        let fork_block_number = 62174000;
 
         let anvil_zksync = AnvilZKsync::new()
             .fork("mainnet")

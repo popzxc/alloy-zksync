@@ -483,7 +483,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn fork_initializes_at_specified_block() {
-        let fork_block_number = 47854817;
+        let fork_block_number = 62174000;
 
         let anvil_zksync = AnvilZKsync::new()
             .fork("mainnet")

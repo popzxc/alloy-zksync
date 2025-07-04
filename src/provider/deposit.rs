@@ -171,8 +171,7 @@ where
                     .await
                     .map_err(|_| {
                         L1CommunicationError::Custom("Error while getting L2 bridge address.")
-                    })?
-                    ._0;
+                    })?;
                 (l1_bridge_address, l2_bridge_address)
             }
             None => {
@@ -250,7 +249,7 @@ where
 
     async fn get_bridge_l2_tx_fee_params<P>(
         &self,
-        bridge_hub_contract: &Bridgehub::BridgehubInstance<(), &P>,
+        bridge_hub_contract: &Bridgehub::BridgehubInstance<&P>,
         l1_to_l2_tx: TransactionRequest,
         l2_chain_id: U256,
         fee_params: &FeeParams,
@@ -281,8 +280,7 @@ where
                 L1CommunicationError::Custom(
                     "Error occurred while estimating L2 transaction base cost.",
                 )
-            })?
-            ._0;
+            })?;
         Ok(BridgeL2TxFeeParams {
             gas_limit,
             tx_base_cost,
@@ -410,8 +408,7 @@ where
                 L1CommunicationError::Custom(
                     "Error occurred while fetching token allowance for the bridge.",
                 )
-            })?
-            ._0;
+            })?;
 
         let allowance_deficit = self.request.amount - token_allowance;
         if allowance_deficit > U256::from(0) {

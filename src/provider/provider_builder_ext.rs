@@ -71,7 +71,7 @@ where
         let anvil_zksync_layer = AnvilZKsyncLayer::from(f(Default::default()));
         let url = anvil_zksync_layer.endpoint_url();
 
-        self.layer(anvil_zksync_layer).on_http(url)
+        self.layer(anvil_zksync_layer).connect_http(url)
     }
 
     fn on_anvil_zksync_with_wallet_and_config(
@@ -110,6 +110,9 @@ where
             wallet.register_signer(signer)
         }
 
-        Ok(self.wallet(wallet).layer(anvil_zksync_layer).on_http(url))
+        Ok(self
+            .wallet(wallet)
+            .layer(anvil_zksync_layer)
+            .connect_http(url))
     }
 }

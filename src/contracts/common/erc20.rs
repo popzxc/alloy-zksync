@@ -35,14 +35,14 @@ alloy::sol! {
 /// A `Result` containing the encoded token data as `Bytes` or an `Error`.
 /// ```
 pub(crate) async fn encode_token_data_for_bridge<P>(
-    erc20_contract: &ERC20Instance<(), P>,
+    erc20_contract: &ERC20Instance<P>,
 ) -> Result<Bytes, Error>
 where
     P: alloy::providers::Provider<Ethereum>,
 {
-    let erc20_name = erc20_contract.name().call().await?._0;
-    let erc20_symbol = erc20_contract.symbol().call().await?._0;
-    let erc20_decimals = erc20_contract.decimals().call().await?._0;
+    let erc20_name = erc20_contract.name().call().await?;
+    let erc20_symbol = erc20_contract.symbol().call().await?;
+    let erc20_decimals = erc20_contract.decimals().call().await?;
 
     let token_data = Bytes::from(
         DynSolValue::Tuple(vec![

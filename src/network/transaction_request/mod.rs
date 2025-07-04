@@ -283,6 +283,10 @@ impl TransactionBuilder<Zksync> for TransactionRequest {
         TransactionBuilder::set_nonce(&mut self.base, nonce)
     }
 
+    fn take_nonce(&mut self) -> Option<u64> {
+        TransactionBuilder::take_nonce(&mut self.base)
+    }
+
     fn input(&self) -> Option<&alloy::primitives::Bytes> {
         TransactionBuilder::input(&self.base)
     }

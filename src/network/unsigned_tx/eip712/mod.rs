@@ -3,7 +3,7 @@
 use alloy::consensus::{
     transaction::RlpEcdsaEncodableTx, SignableTransaction, Signed, Transaction, Typed2718,
 };
-use alloy::primitives::PrimitiveSignature as Signature;
+use alloy::primitives::Signature;
 use alloy::primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
 use alloy::rlp::{BufMut, Decodable, Encodable, Header};
 use alloy::rpc::types::TransactionInput;
@@ -449,9 +449,7 @@ mod tests {
     use super::TxEip712;
     use alloy::consensus::SignableTransaction;
     use alloy::hex::FromHex;
-    use alloy::primitives::{
-        address, hex, Address, Bytes, FixedBytes, PrimitiveSignature as Signature, B256, U256,
-    };
+    use alloy::primitives::{address, hex, Address, Bytes, FixedBytes, Signature, B256, U256};
 
     #[test]
     fn decode_eip712_tx() {

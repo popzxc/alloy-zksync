@@ -363,7 +363,7 @@ mod tests {
 
         let provider = zksync_provider()
             .with_recommended_fillers()
-            .on_http(full_addr.parse().unwrap());
+            .connect_http(full_addr.parse().unwrap());
         test_fn(provider).await;
     }
 

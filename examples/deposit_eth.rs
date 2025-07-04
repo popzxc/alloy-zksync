@@ -1,11 +1,11 @@
 use alloy::{
     network::EthereumWallet,
-    primitives::{address, U256},
+    primitives::{U256, address},
     providers::ProviderBuilder,
     signers::local::PrivateKeySigner,
 };
 use alloy_zksync::{
-    provider::{zksync_provider, DepositRequest, ZksyncProviderWithWallet},
+    provider::{DepositRequest, ZksyncProviderWithWallet, zksync_provider},
     wallet::ZksyncWallet,
 };
 use anyhow::Result;

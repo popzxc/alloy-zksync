@@ -4,7 +4,7 @@ use alloy::consensus::SignableTransaction;
 use alloy::network::{Network, NetworkWallet, TxSigner};
 use alloy::primitives::Address;
 
-use crate::network::{tx_envelope::TxEnvelope, unsigned_tx::TypedTransaction, Zksync};
+use crate::network::{Zksync, tx_envelope::TxEnvelope, unsigned_tx::TypedTransaction};
 
 use alloy::primitives::Signature;
 use std::{collections::BTreeMap, sync::Arc};
@@ -105,9 +105,9 @@ impl ZksyncWallet {
 impl<N> NetworkWallet<N> for ZksyncWallet
 where
     N: Network<
-        UnsignedTx = alloy::consensus::TypedTransaction,
-        TxEnvelope = alloy::consensus::TxEnvelope,
-    >,
+            UnsignedTx = alloy::consensus::TypedTransaction,
+            TxEnvelope = alloy::consensus::TxEnvelope,
+        >,
 {
     fn default_signer_address(&self) -> Address {
         self.default

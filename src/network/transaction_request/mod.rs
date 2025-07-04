@@ -1,13 +1,13 @@
 use alloy::network::{
     Network, TransactionBuilder, TransactionBuilderError, UnbuiltTransactionError,
 };
-use alloy::primitives::{Bytes, TxKind, B256, U256};
+use alloy::primitives::{B256, Bytes, TxKind, U256};
 
 use crate::contracts::l2::contract_deployer::CONTRACT_DEPLOYER_ADDRESS;
 use crate::network::{tx_type::TxType, unsigned_tx::eip712::TxEip712};
 
-use super::unsigned_tx::eip712::{hash_bytecode, BytecodeHashError, PaymasterParams};
-use super::{unsigned_tx::eip712::Eip712Meta, Zksync};
+use super::unsigned_tx::eip712::{BytecodeHashError, PaymasterParams, hash_bytecode};
+use super::{Zksync, unsigned_tx::eip712::Eip712Meta};
 
 /// Transaction request supporting ZKsync's EIP-712 transaction types.
 ///

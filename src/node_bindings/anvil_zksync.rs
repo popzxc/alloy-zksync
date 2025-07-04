@@ -3,8 +3,8 @@
 
 //! Utilities for launching an `anvil-zksync` instance.
 
-use alloy::primitives::{hex, Address, ChainId};
-use k256::{ecdsa::SigningKey, SecretKey as K256SecretKey};
+use alloy::primitives::{Address, ChainId, hex};
+use k256::{SecretKey as K256SecretKey, ecdsa::SigningKey};
 use rand::Rng;
 use std::{
     io::{BufRead, BufReader},

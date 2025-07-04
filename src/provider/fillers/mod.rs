@@ -4,13 +4,13 @@ use alloy::{
     network::TransactionBuilder,
     primitives::U256,
     providers::{
-        fillers::{FillerControlFlow, TxFiller},
         Provider, SendableTx,
+        fillers::{FillerControlFlow, TxFiller},
     },
     transports::TransportResult,
 };
 
-use crate::network::{transaction_request::TransactionRequest, Zksync};
+use crate::network::{Zksync, transaction_request::TransactionRequest};
 
 use super::{Eip712Fee, ZksyncProvider};
 

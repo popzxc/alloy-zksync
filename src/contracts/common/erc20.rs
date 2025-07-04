@@ -1,12 +1,12 @@
 //! ZKsync-specific utilities related to ERC20 contracts.
 
+use ERC20::ERC20Instance;
 use alloy::network::Ethereum;
 use alloy::{
     contract::Error,
     dyn_abi::DynSolValue,
     primitives::{Bytes, U256},
 };
-use ERC20::ERC20Instance;
 
 alloy::sol! {
     /// ABI for an ERC20 contract.

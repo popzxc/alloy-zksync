@@ -1,8 +1,8 @@
 use alloy::primitives::{Address, Bytes, FixedBytes, U256};
 use alloy::rlp::{Decodable, Encodable, Header};
-use serde::{ser::SerializeSeq, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, ser::SerializeSeq};
 
-use super::utils::{hash_bytecode, BytecodeHashError};
+use super::utils::{BytecodeHashError, hash_bytecode};
 
 // Serialize `Bytes` as `Vec<u8>` as they are encoded as hex string for human-friendly serializers
 fn serialize_bytes<S: serde::Serializer>(

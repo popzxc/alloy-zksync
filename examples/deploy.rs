@@ -5,7 +5,7 @@
 use alloy::{network::ReceiptResponse, primitives::U256, providers::Provider as _, sol};
 use alloy_zksync::{
     network::transaction_request::TransactionRequest,
-    provider::{zksync_provider, ProviderBuilderExt as _},
+    provider::{ProviderBuilderExt as _, zksync_provider},
 };
 use anyhow::Result;
 

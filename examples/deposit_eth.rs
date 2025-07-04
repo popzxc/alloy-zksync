@@ -56,6 +56,6 @@ async fn main() -> Result<()> {
         .get_receipt()
         .await?;
 
-    println!("L2 deposit transaction receipt: {:#?}", deposit_l2_receipt);
+    println!("L2 deposit transaction receipt: {deposit_l2_receipt:#?}");
     Ok(())
 }

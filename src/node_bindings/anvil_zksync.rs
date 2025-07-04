@@ -331,7 +331,6 @@ impl AnvilZKsync {
         if let Some(fork) = self.fork {
             cmd.arg("fork").arg("--network").arg(fork);
             if let Some(fork_block_number) = self.fork_block_number {
-                println!("fork_block_number ln 312: {}", fork_block_number);
                 cmd.arg("--fork-block-number")
                     .arg(fork_block_number.to_string());
             }
@@ -533,7 +532,7 @@ mod tests {
         let derived_addresses: Vec<_> = anvil_zksync
             .addresses()
             .iter()
-            .map(|address| format!("{:#x}", address))
+            .map(|address| format!("{address:#x}"))
             .collect();
 
         assert_eq!(

@@ -358,7 +358,7 @@ mod tests {
 
         let server_addr: SocketAddr = server.local_addr().unwrap();
         let handle = server.start(module);
-        let full_addr = format!("http://{}", server_addr);
+        let full_addr = format!("http://{server_addr}");
         tokio::spawn(handle.stopped());
 
         let provider = zksync_provider()

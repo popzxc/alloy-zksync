@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
         .gas_price(l1_gas_price)
         .deploy()
         .await?;
-    println!("L1 ERC20 token address: {}", erc20_token_address);
+    println!("L1 ERC20 token address: {erc20_token_address}");
 
     let zksync_wallet: ZksyncWallet = ZksyncWallet::from(signer.clone());
     let zksync_provider = zksync_provider()
@@ -80,6 +80,6 @@ async fn main() -> Result<()> {
         .get_receipt()
         .await?;
 
-    println!("L2 deposit transaction receipt: {:#?}", deposit_l2_receipt);
+    println!("L2 deposit transaction receipt: {deposit_l2_receipt:#?}");
     Ok(())
 }

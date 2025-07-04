@@ -95,7 +95,7 @@ impl ZksyncWallet {
     ) -> alloy::signers::Result<Signature> {
         self.signer_by_address(sender)
             .ok_or_else(|| {
-                alloy::signers::Error::other(format!("Missing signing credential for {}", sender))
+                alloy::signers::Error::other(format!("Missing signing credential for {sender}"))
             })?
             .sign_transaction(tx)
             .await

@@ -20,7 +20,7 @@ pub fn apply_l1_to_l2_alias(l1_address: Address) -> Address {
         U256::from_str("0x1111000000000000000000000000000000001111").unwrap();
 
     let l2_address = (contract_address + l1_to_l2_alias_offset) % address_modulo;
-    Address::from_hex(format!("{:x}", l2_address)).unwrap()
+    Address::from_hex(format!("{l2_address:x}")).unwrap()
 }
 
 #[cfg(test)]

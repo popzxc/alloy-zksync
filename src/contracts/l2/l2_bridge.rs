@@ -1,8 +1,8 @@
+use L2Bridge::finalizeDepositCall;
 use alloy::{
     primitives::{Address, Bytes, U256},
     sol_types::SolCall,
 };
-use L2Bridge::finalizeDepositCall;
 
 alloy::sol! {
     /// L2Bridge contract for finalizing deposits from Layer 1.

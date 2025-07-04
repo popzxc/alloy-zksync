@@ -1,7 +1,7 @@
 use alloy::{
     providers::{
-        fillers::{JoinFill, TxFiller, WalletFiller},
         ProviderBuilder, ProviderLayer, RootProvider,
+        fillers::{JoinFill, TxFiller, WalletFiller},
     },
     signers::local::LocalSigner,
 };
@@ -32,7 +32,7 @@ where
 
     /// Same as [`on_anvil_zksync`](Self::on_anvil_zksync), allows to configure `anvil-zksync`.
     fn on_anvil_zksync_with_config(self, f: impl FnOnce(AnvilZKsync) -> AnvilZKsync)
-        -> F::Provider;
+    -> F::Provider;
 
     /// Same as [`on_anvil_zksync_with_wallet`](Self::on_anvil_zksync_with_wallet), allows to configure `anvil-zksync`.
     fn on_anvil_zksync_with_wallet_and_config(
@@ -71,7 +71,7 @@ where
         let anvil_zksync_layer = AnvilZKsyncLayer::from(f(Default::default()));
         let url = anvil_zksync_layer.endpoint_url();
 
-        self.layer(anvil_zksync_layer).on_http(url)
+        self.layer(anvil_zksync_layer).connect_http(url)
     }
 
     fn on_anvil_zksync_with_wallet_and_config(
@@ -110,6 +110,9 @@ where
             wallet.register_signer(signer)
         }
 
-        Ok(self.wallet(wallet).layer(anvil_zksync_layer).on_http(url))
+        Ok(self
+            .wallet(wallet)
+            .layer(anvil_zksync_layer)
+            .connect_http(url))
     }
 }

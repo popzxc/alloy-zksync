@@ -7,15 +7,15 @@ pub use self::{
     provider_builder_ext::ProviderBuilderExt,
 };
 use crate::{
-    network::{transaction_request::TransactionRequest, Zksync},
+    network::{Zksync, transaction_request::TransactionRequest},
     types::*,
 };
 use alloy::{
     network::Ethereum,
-    primitives::{Address, Bytes, B256, U256, U64},
+    primitives::{Address, B256, Bytes, U64, U256},
     providers::{
-        fillers::{ChainIdFiller, JoinFill, NonceFiller, RecommendedFillers},
         Identity, Provider, ProviderBuilder, ProviderCall, WalletProvider,
+        fillers::{ChainIdFiller, JoinFill, NonceFiller, RecommendedFillers},
     },
     rpc::client::NoParams,
     transports::{BoxTransport, Transport},
@@ -323,7 +323,7 @@ mod tests {
     use alloy::hex::FromHex;
     use alloy::primitives::address;
     use alloy::primitives::{Address, Bytes, U256};
-    use alloy::providers::{fillers::FillProvider, RootProvider};
+    use alloy::providers::{RootProvider, fillers::FillProvider};
     use std::net::SocketAddr;
 
     use crate::network::unsigned_tx::eip712::PaymasterParams;
@@ -358,12 +358,12 @@ mod tests {
 
         let server_addr: SocketAddr = server.local_addr().unwrap();
         let handle = server.start(module);
-        let full_addr = format!("http://{}", server_addr);
+        let full_addr = format!("http://{server_addr}");
         tokio::spawn(handle.stopped());
 
         let provider = zksync_provider()
             .with_recommended_fillers()
-            .on_http(full_addr.parse().unwrap());
+            .connect_http(full_addr.parse().unwrap());
         test_fn(provider).await;
     }
 
@@ -1606,10 +1606,10 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn get_proof_when_available() {
         let address = address!("0000000000000000000000000000000000008003");
-        let keys = vec![B256::from_str(
-            "0x8b65c0cf1012ea9f393197eb24619fd814379b298b238285649e14f936a5eb12",
-        )
-        .unwrap()];
+        let keys = vec![
+            B256::from_str("0x8b65c0cf1012ea9f393197eb24619fd814379b298b238285649e14f936a5eb12")
+                .unwrap(),
+        ];
         let l1_batch_number = 354895_u64;
         let proof = Some(Proof {
             address: address!("0000000000000000000000000000000000008003"),
@@ -1618,10 +1618,12 @@ mod tests {
                     "0x8b65c0cf1012ea9f393197eb24619fd814379b298b238285649e14f936a5eb12",
                 )
                 .unwrap(),
-                proof: vec![B256::from_str(
-                    "0xe3e8e49a998b3abf8926f62a5a832d829aadc1b7e059f1ea59ffbab8e11edfb7",
-                )
-                .unwrap()],
+                proof: vec![
+                    B256::from_str(
+                        "0xe3e8e49a998b3abf8926f62a5a832d829aadc1b7e059f1ea59ffbab8e11edfb7",
+                    )
+                    .unwrap(),
+                ],
                 value: B256::from_str(
                     "0x0000000000000000000000000000000000000000000000000000000000000060",
                 )
@@ -1661,10 +1663,10 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn get_proof_when_not_available() {
         let address = address!("0000000000000000000000000000000000008003");
-        let keys = vec![B256::from_str(
-            "0x8b65c0cf1012ea9f393197eb24619fd814379b298b238285649e14f936a5eb12",
-        )
-        .unwrap()];
+        let keys = vec![
+            B256::from_str("0x8b65c0cf1012ea9f393197eb24619fd814379b298b238285649e14f936a5eb12")
+                .unwrap(),
+        ];
         let l1_batch_number = 354895_u64;
         let keys_rpc_request = keys.clone();
         run_server_and_test(

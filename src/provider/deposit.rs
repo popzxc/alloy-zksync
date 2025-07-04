@@ -2,27 +2,27 @@
 
 use crate::{
     contracts::{
-        common::erc20::{encode_token_data_for_bridge, ERC20},
+        common::erc20::{ERC20, encode_token_data_for_bridge},
         l1::{
             bridge_hub::{
                 Bridgehub::{self},
                 L2TransactionRequestDirect, L2TransactionRequestTwoBridges,
             },
-            l1_bridge::{encode_deposit_token_calldata, L1Bridge},
+            l1_bridge::{L1Bridge, encode_deposit_token_calldata},
         },
         l2::l2_bridge::encode_finalize_deposit_calldata,
     },
-    network::{transaction_request::TransactionRequest, Zksync},
+    network::{Zksync, transaction_request::TransactionRequest},
     provider::{
-        l1_transaction_receipt::L1TransactionReceipt, L1CommunicationError, ZksyncProvider,
+        L1CommunicationError, ZksyncProvider, l1_transaction_receipt::L1TransactionReceipt,
     },
-    utils::{apply_l1_to_l2_alias, ETHER_L1_ADDRESS},
+    utils::{ETHER_L1_ADDRESS, apply_l1_to_l2_alias},
 };
 use alloy::{
     eips::eip1559::Eip1559Estimation,
     network::{Ethereum, NetworkWallet, TransactionBuilder},
     primitives::{Address, Bytes, U256},
-    providers::{utils::Eip1559Estimator, WalletProvider},
+    providers::{WalletProvider, utils::Eip1559Estimator},
     rpc::types::eth::TransactionRequest as L1TransactionRequest,
 };
 use std::str::FromStr;
@@ -171,8 +171,7 @@ where
                     .await
                     .map_err(|_| {
                         L1CommunicationError::Custom("Error while getting L2 bridge address.")
-                    })?
-                    ._0;
+                    })?;
                 (l1_bridge_address, l2_bridge_address)
             }
             None => {
@@ -250,7 +249,7 @@ where
 
     async fn get_bridge_l2_tx_fee_params<P>(
         &self,
-        bridge_hub_contract: &Bridgehub::BridgehubInstance<(), &P>,
+        bridge_hub_contract: &Bridgehub::BridgehubInstance<&P>,
         l1_to_l2_tx: TransactionRequest,
         l2_chain_id: U256,
         fee_params: &FeeParams,
@@ -281,8 +280,7 @@ where
                 L1CommunicationError::Custom(
                     "Error occurred while estimating L2 transaction base cost.",
                 )
-            })?
-            ._0;
+            })?;
         Ok(BridgeL2TxFeeParams {
             gas_limit,
             tx_base_cost,
@@ -410,8 +408,7 @@ where
                 L1CommunicationError::Custom(
                     "Error occurred while fetching token allowance for the bridge.",
                 )
-            })?
-            ._0;
+            })?;
 
         let allowance_deficit = self.request.amount - token_allowance;
         if allowance_deficit > U256::from(0) {

@@ -1,11 +1,11 @@
 use alloy::{
     network::EthereumWallet,
-    primitives::{address, U256},
+    primitives::{U256, address},
     providers::ProviderBuilder,
     signers::local::PrivateKeySigner,
 };
 use alloy_zksync::{
-    provider::{zksync_provider, DepositRequest, ZksyncProviderWithWallet},
+    provider::{DepositRequest, ZksyncProviderWithWallet, zksync_provider},
     wallet::ZksyncWallet,
 };
 use anyhow::Result;
@@ -27,10 +27,14 @@ async fn main() -> Result<()> {
             .expect("should parse private key");
     let wallet = EthereumWallet::from(signer.clone());
 
-    let l1_provider = ProviderBuilder::new().wallet(wallet).on_http(l1_rpc_url);
+    let l1_provider = ProviderBuilder::new()
+        .wallet(wallet)
+        .connect_http(l1_rpc_url);
 
     let zksync_wallet: ZksyncWallet = ZksyncWallet::from(signer.clone());
-    let zksync_provider = zksync_provider().wallet(zksync_wallet).on_http(l2_rpc_url);
+    let zksync_provider = zksync_provider()
+        .wallet(zksync_wallet)
+        .connect_http(l2_rpc_url);
 
     // use another test rich wallet as a receiver
     // https://github.com/matter-labs/local-setup/blob/main/rich-wallets.json
@@ -52,6 +56,6 @@ async fn main() -> Result<()> {
         .get_receipt()
         .await?;
 
-    println!("L2 deposit transaction receipt: {:#?}", deposit_l2_receipt);
+    println!("L2 deposit transaction receipt: {deposit_l2_receipt:#?}");
     Ok(())
 }

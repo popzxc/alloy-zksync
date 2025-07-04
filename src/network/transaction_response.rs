@@ -129,7 +129,7 @@ mod serde_from {
     use crate::network::transaction_response::TransactionResponse;
     use crate::network::tx_envelope::TxEnvelope;
     use crate::network::unsigned_tx::eip712::TxEip712;
-    use alloy::consensus::{transaction::Recovered, Signed};
+    use alloy::consensus::{Signed, transaction::Recovered};
     use alloy::primitives::BlockHash;
     use serde::{Deserialize, Serialize};
 

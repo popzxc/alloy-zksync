@@ -1,8 +1,8 @@
-use super::{utils::hash_bytecode, TxEip712};
+use super::{TxEip712, utils::hash_bytecode};
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::{
     sol,
-    sol_types::{eip712_domain, Eip712Domain, SolStruct},
+    sol_types::{Eip712Domain, SolStruct, eip712_domain},
 };
 
 impl TxEip712 {

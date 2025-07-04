@@ -4,9 +4,9 @@ use alloy::consensus::SignableTransaction;
 use alloy::network::{Network, NetworkWallet, TxSigner};
 use alloy::primitives::Address;
 
-use crate::network::{tx_envelope::TxEnvelope, unsigned_tx::TypedTransaction, Zksync};
+use crate::network::{Zksync, tx_envelope::TxEnvelope, unsigned_tx::TypedTransaction};
 
-use alloy::primitives::PrimitiveSignature as Signature;
+use alloy::primitives::Signature;
 use std::{collections::BTreeMap, sync::Arc};
 
 /// A wallet capable of signing any transaction for the Ethereum network.
@@ -95,7 +95,7 @@ impl ZksyncWallet {
     ) -> alloy::signers::Result<Signature> {
         self.signer_by_address(sender)
             .ok_or_else(|| {
-                alloy::signers::Error::other(format!("Missing signing credential for {}", sender))
+                alloy::signers::Error::other(format!("Missing signing credential for {sender}"))
             })?
             .sign_transaction(tx)
             .await
@@ -105,9 +105,9 @@ impl ZksyncWallet {
 impl<N> NetworkWallet<N> for ZksyncWallet
 where
     N: Network<
-        UnsignedTx = alloy::consensus::TypedTransaction,
-        TxEnvelope = alloy::consensus::TxEnvelope,
-    >,
+            UnsignedTx = alloy::consensus::TypedTransaction,
+            TxEnvelope = alloy::consensus::TxEnvelope,
+        >,
 {
     fn default_signer_address(&self) -> Address {
         self.default

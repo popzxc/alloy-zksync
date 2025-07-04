@@ -1,6 +1,6 @@
 use alloy::consensus::{TxReceipt, TxType};
-use alloy::network::eip2718::{Decodable2718, Eip2718Error, Encodable2718, Typed2718};
 use alloy::network::AnyReceiptEnvelope;
+use alloy::network::eip2718::{Decodable2718, Eip2718Error, Encodable2718, Typed2718};
 use alloy::primitives::Log;
 use core::convert::TryInto;
 use core::fmt;

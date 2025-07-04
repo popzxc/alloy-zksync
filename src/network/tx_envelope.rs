@@ -144,7 +144,7 @@ impl TxEnvelope {
     }
 
     /// Return the reference to signature.
-    pub const fn signature(&self) -> &alloy::primitives::PrimitiveSignature {
+    pub const fn signature(&self) -> &alloy::primitives::Signature {
         match self {
             Self::Native(inner) => inner.signature(),
             Self::Eip712(inner) => inner.signature(),

@@ -1,7 +1,7 @@
 //! ZKsync-specific type definitions.
 
 use crate::network::unsigned_tx::eip712::PaymasterParams;
-use alloy::primitives::{Address, Bytes, B256, U256, U64};
+use alloy::primitives::{Address, B256, Bytes, U64, U256};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 

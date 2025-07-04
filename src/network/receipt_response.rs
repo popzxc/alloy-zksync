@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use alloy::consensus::TxReceipt;
-use alloy::primitives::{Address, BlockHash, Bloom, TxHash, B256, U64};
+use alloy::primitives::{Address, B256, BlockHash, Bloom, TxHash, U64};
 use alloy::rpc::types::{Log, TransactionReceipt};
 
 use super::receipt_envelope::ReceiptEnvelope;
@@ -130,8 +130,8 @@ mod tests {
 
     use super::*;
     use alloy::network::ReceiptResponse as AlloyReceiptResponse;
-    use alloy::primitives::address;
     use alloy::primitives::U256;
+    use alloy::primitives::address;
 
     #[tokio::test(flavor = "multi_thread")]
     async fn receipt_test() {

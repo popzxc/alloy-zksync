@@ -36,6 +36,12 @@ impl TxType {
     }
 }
 
+impl alloy::consensus::Typed2718 for TxType {
+    fn ty(&self) -> u8 {
+        u8::from(*self)
+    }
+}
+
 impl From<alloy::consensus::TxType> for TxType {
     fn from(value: alloy::consensus::TxType) -> Self {
         let raw_value = value as u8;

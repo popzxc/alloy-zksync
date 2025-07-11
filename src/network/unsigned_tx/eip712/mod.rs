@@ -1,10 +1,10 @@
 //! EIP-712 transaction type, specific to the ZKsync network.
 
 use alloy::consensus::{
-    transaction::RlpEcdsaEncodableTx, SignableTransaction, Signed, Transaction, Typed2718,
+    SignableTransaction, Signed, Transaction, Typed2718, transaction::RlpEcdsaEncodableTx,
 };
-use alloy::primitives::PrimitiveSignature as Signature;
-use alloy::primitives::{keccak256, Address, Bytes, ChainId, TxKind, U256};
+use alloy::primitives::Signature;
+use alloy::primitives::{Address, Bytes, ChainId, TxKind, U256, keccak256};
 use alloy::rlp::{BufMut, Decodable, Encodable, Header};
 use alloy::rpc::types::TransactionInput;
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::network::tx_type::TxType;
 
 pub use self::meta::{Eip712Meta, PaymasterParams};
-pub use self::utils::{hash_bytecode, BytecodeHashError};
+pub use self::utils::{BytecodeHashError, hash_bytecode};
 
 mod meta;
 mod signing;
@@ -449,9 +449,7 @@ mod tests {
     use super::TxEip712;
     use alloy::consensus::SignableTransaction;
     use alloy::hex::FromHex;
-    use alloy::primitives::{
-        address, hex, Address, Bytes, FixedBytes, PrimitiveSignature as Signature, B256, U256,
-    };
+    use alloy::primitives::{Address, B256, Bytes, FixedBytes, Signature, U256, address, hex};
 
     #[test]
     fn decode_eip712_tx() {
@@ -475,10 +473,12 @@ mod tests {
             tx.eip712_meta,
             Some(Eip712Meta {
                 gas_per_pubdata: U256::from(4),
-                factory_deps: vec![Bytes::from_hex(
-                    "0x0202020202020202020202020202020202020202020202020202020202020202"
-                )
-                .unwrap()],
+                factory_deps: vec![
+                    Bytes::from_hex(
+                        "0x0202020202020202020202020202020202020202020202020202020202020202"
+                    )
+                    .unwrap()
+                ],
                 custom_signature: Some(Bytes::from_hex("0x010203").unwrap()),
                 paymaster_params: Some(PaymasterParams {
                     paymaster: address!("0000000000000000000000000000000000000000"),

@@ -3,8 +3,8 @@
 
 //! Utilities for launching an `anvil-zksync` instance.
 
-use alloy::primitives::{hex, Address, ChainId};
-use k256::{ecdsa::SigningKey, SecretKey as K256SecretKey};
+use alloy::primitives::{Address, ChainId, hex};
+use k256::{SecretKey as K256SecretKey, ecdsa::SigningKey};
 use rand::Rng;
 use std::{
     io::{BufRead, BufReader},
@@ -331,7 +331,6 @@ impl AnvilZKsync {
         if let Some(fork) = self.fork {
             cmd.arg("fork").arg("--network").arg(fork);
             if let Some(fork_block_number) = self.fork_block_number {
-                println!("fork_block_number ln 312: {}", fork_block_number);
                 cmd.arg("--fork-block-number")
                     .arg(fork_block_number.to_string());
             }
@@ -458,7 +457,7 @@ mod tests {
         let chain_id = 92;
         let anvil_zksync = AnvilZKsync::new().chain_id(chain_id).spawn();
         let rpc_url = anvil_zksync.endpoint_url();
-        let provider = ProviderBuilder::new().on_http(rpc_url);
+        let provider = ProviderBuilder::new().connect_http(rpc_url);
 
         let returned_chain_id = provider.get_chain_id().await.unwrap();
 
@@ -472,7 +471,7 @@ mod tests {
     async fn fork_initializes_correct_chain() {
         let anvil_zksync = AnvilZKsync::new().fork("mainnet").spawn();
         let rpc_url = anvil_zksync.endpoint_url();
-        let provider = ProviderBuilder::new().on_http(rpc_url);
+        let provider = ProviderBuilder::new().connect_http(rpc_url);
 
         let chain_id = provider.get_chain_id().await.unwrap();
 
@@ -491,7 +490,7 @@ mod tests {
             .spawn();
 
         let rpc_url = anvil_zksync.endpoint_url();
-        let provider = ProviderBuilder::new().on_http(rpc_url);
+        let provider = ProviderBuilder::new().connect_http(rpc_url);
 
         // Query the latest block number to verify the fork block number.
         let block_number = provider.get_block_number().await.unwrap();
@@ -533,7 +532,7 @@ mod tests {
         let derived_addresses: Vec<_> = anvil_zksync
             .addresses()
             .iter()
-            .map(|address| format!("{:#x}", address))
+            .map(|address| format!("{address:#x}"))
             .collect();
 
         assert_eq!(

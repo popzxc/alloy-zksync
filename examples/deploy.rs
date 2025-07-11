@@ -5,7 +5,7 @@
 use alloy::{network::ReceiptResponse, primitives::U256, providers::Provider as _, sol};
 use alloy_zksync::{
     network::transaction_request::TransactionRequest,
-    provider::{zksync_provider, ProviderBuilderExt as _},
+    provider::{ProviderBuilderExt as _, zksync_provider},
 };
 use anyhow::Result;
 
@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
 
     // Retrieve the number, which should be 43.
     let builder = contract.number();
-    let number = builder.call().await?.number.to_string();
+    let number = builder.call().await?.to_string();
 
     println!("Retrieved number: {number}");
 

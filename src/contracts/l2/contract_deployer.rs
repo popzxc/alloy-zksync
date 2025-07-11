@@ -1,5 +1,5 @@
 use alloy::{
-    primitives::{Address, Bytes, B256},
+    primitives::{Address, B256, Bytes},
     sol_types::SolCall,
 };
 

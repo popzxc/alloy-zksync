@@ -2,12 +2,12 @@
 
 use alloy::{
     network::TransactionBuilder,
-    primitives::{address, U256},
+    primitives::{U256, address},
     providers::Provider,
 };
 use alloy_zksync::{
     network::transaction_request::TransactionRequest,
-    provider::{zksync_provider, ProviderBuilderExt},
+    provider::{ProviderBuilderExt, zksync_provider},
 };
 
 #[tokio::main]

@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["alloy_zksync",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.88.0/core/convert/trait.AsRef.html\" title=\"trait core::convert::AsRef\">AsRef</a>&lt;<a class=\"enum\" href=\"alloy_zksync/network/tx_envelope/enum.TxEnvelope.html\" title=\"enum alloy_zksync::network::tx_envelope::TxEnvelope\">TxEnvelope</a>&gt; for <a class=\"struct\" href=\"alloy_zksync/network/transaction_response/struct.TransactionResponse.html\" title=\"struct alloy_zksync::network::transaction_response::TransactionResponse\">TransactionResponse</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.88.0/core/convert/trait.AsRef.html\" title=\"trait core::convert::AsRef\">AsRef</a>&lt;<a class=\"struct\" href=\"alloy_zksync/network/header/struct.Header.html\" title=\"struct alloy_zksync::network::header::Header\">Header</a>&gt; for <a class=\"struct\" href=\"alloy_zksync/network/header_response/struct.HeaderResponse.html\" title=\"struct alloy_zksync::network::header_response::HeaderResponse\">HeaderResponse</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.88.0/core/convert/trait.AsRef.html\" title=\"trait core::convert::AsRef\">AsRef</a>&lt;dyn Transaction&gt; for <a class=\"enum\" href=\"alloy_zksync/network/tx_envelope/enum.TxEnvelope.html\" title=\"enum alloy_zksync::network::tx_envelope::TxEnvelope\">TxEnvelope</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1359]}

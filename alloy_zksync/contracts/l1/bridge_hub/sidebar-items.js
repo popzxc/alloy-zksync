@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["Bridgehub"],"struct":["L2CanonicalTransaction","L2TransactionRequestDirect","L2TransactionRequestTwoBridges"]};

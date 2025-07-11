@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["L1CommunicationError"],"fn":["zksync_provider"],"mod":["fillers","layers"],"struct":["DepositExecutor","DepositRequest","L1TransactionReceipt"],"trait":["ProviderBuilderExt","ZksyncProvider","ZksyncProviderWithWallet"]};

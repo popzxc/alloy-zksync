@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["contracts","network","node_bindings","provider","types","utils","wallet"]};

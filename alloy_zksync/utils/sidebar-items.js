@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ETHER_L1_ADDRESS"],"fn":["apply_l1_to_l2_alias"]};

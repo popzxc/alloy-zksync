@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["L1BridgeCalls"],"fn":["new"],"struct":["L1BridgeInstance","l2BridgeAddressCall","l2BridgeAddressReturn"]};

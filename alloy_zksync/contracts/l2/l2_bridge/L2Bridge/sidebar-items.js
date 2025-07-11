@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["L2BridgeCalls"],"fn":["new"],"struct":["L2BridgeInstance","finalizeDepositCall","finalizeDepositReturn"]};
